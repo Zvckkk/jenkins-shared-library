@@ -512,14 +512,14 @@ def stage_library(String stage_name) {
                         }
                         //scm pyadi-iio
                         dir('pyadi-iio'){
-                            under_scm = isMultiBranchPipeline()
-                            if (under_scm){
-                                 println("Multibranch pipeline. Checkout scm")
-                            }else{
-                                println("Not a multibranch pipeline. Cloning "+gauntEnv.pyadi_iio_branch+" branch from "+gauntEnv.pyadi_iio_repo)
-                                run_i('git clone -b "' + gauntEnv.pyadi_iio_branch + '" ' + gauntEnv.pyadi_iio_repo+' .', true)
-                            }
+                            def branch = isMultiBranchPipeline() ?: "${gauntEnv.pyadi_iio_branch}"
+                            checkout([
+                                $class : 'GitSCM',
+                                branches : [[name: branch]],
+                                userRemoteConfigs: [[credentialsId: '', url: "${gauntEnv.pyadi_iio_repo}"]]
+                            ])
                         }
+
                         dir('pyadi-iio')
                         {
                             run_i('pip3 install -r requirements.txt', true)
@@ -1379,20 +1379,9 @@ def set_update_nebula_config(boolean enable) {
  * Declaring the GitHub Project url in a non-multibranch pipeline does not conflict with checking.
  */
 def isMultiBranchPipeline() {
-    isMultiBranch = false
     println("Checking if multibranch pipeline..")
-    try
-    {
-        retry(3){
-            checkout scm
-            isMultiBranch = true
-        }
-    }
-    catch(all)
-    {
-        println("Not a multibranch pipeline")
-    }
-    return isMultiBranch
+    def branch = (env.BRANCH_NAME)? "*/${env.BRANCH_NAME}" : ""
+    return branch
 }
 
 /**
