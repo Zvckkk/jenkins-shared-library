@@ -629,104 +629,56 @@ def stage_library(String stage_name) {
     case 'MATLABTests':
         println('Added Run MATLAB Toolbox Tests')
         cls = { String board ->
-            def under_scm = true
             stage("Run MATLAB Toolbox Tests") {
                 def ip = nebula('update-config network-config dutip --board-name='+board)
                 def description = ""
                 def xmlFile = board+'_HWTestResults.xml'
                 sh 'cp -r /root/.matlabro /root/.matlab'
-                under_scm = isMultiBranchPipeline()
-                if (under_scm)
-                {   
-                    println("Multibranch pipeline. Checkout scm.")
-                    retry(3) {
-                        sleep(5)
-                        checkout scm
-                        sh 'git submodule update --init'
-                    }
-                    createMFile()
-                    try{
-                        cmd = 'IIO_URI="ip:'+ip+'" board="'+board+'" M2K_URI="'+getURIFromSerial(board)+'"'
-                        cmd += ' elasticserver='+gauntEnv.elastic_server+' timeout -s KILL '+gauntEnv.matlab_timeout
-                        cmd += ' /usr/local/MATLAB/'+gauntEnv.matlab_release+'/bin/matlab -nosplash -nodesktop -nodisplay'
-                        cmd += ' -r "run(\'matlab_commands.m\');exit"'
-                        statusCode = sh script:cmd, returnStatus:true
-                    }catch (Exception ex){
-                        xmlFile =  sh(returnStdout: true, script: 'ls | grep _*Results.xml').trim()
-                        throw new NominalException(ex.getMessage())
-                    }finally{
-                            junit testResults: '*.xml', allowEmptyResults: true
-                            // archiveArtifacts artifacts: xmlFile, followSymlinks: false, allowEmptyArchive: true
-                            // get MATLAB hardware test results for logging
-                            if(fileExists(xmlFile)){
-                                try{
-                                    parseForLogging ('matlab', xmlFile, board)
-                                }catch(Exception ex){
-                                    println('Parsing MATLAB hardware results failed')
-                                    echo getStackTrace(ex)
-                                }
-                            }
-                            // Print test result summary and set stage status depending on test result
-                            if (statusCode != 0) {
-                                currentBuild.result = 'FAILURE'
-                            }
-                            switch (statusCode) {
-                                case 1:
-                                    unstable("MATLAB: Error encountered when running the tests.")
-                                    break
-                                case 2:
-                                    unstable("MATLAB: Some tests failed.")
-                                    break
-                                case 3:
-                                    unstable("MATLAB: Some tests did not run to completion.")
-                                    break
-                            }
-                        }
-                }
-                else
-                {   
-                    println("Not a multibranch pipeline. Cloning "+gauntEnv.matlab_branch+" branch from "+gauntEnv.matlab_repo)
-                    sh 'git clone --recursive -b '+gauntEnv.matlab_branch+' '+gauntEnv.matlab_repo+' Toolbox'
-                    dir('Toolbox')
-                    {
-                        createMFile()
+                def branch = isMultiBranchPipeline() ?: "${gauntEnv.matlab_branch}"
+                checkout([
+                    $class : 'GitSCM',
+                    branches : [[name: branch]],
+                    userRemoteConfigs: [[credentialsId: '', url: "${gauntEnv.matlab_repo}"]],
+                    extensions: [
+                        [$class: 'SubmoduleOption', recursiveSubmodules: true, trackingSubmodules: false]
+                    ]
+                ])
+                createMFile()
+                try{
+                    cmd = 'IIO_URI="ip:'+ip+'" board="'+board+'" M2K_URI="'+getURIFromSerial(board)+'"'
+                    cmd += ' elasticserver='+gauntEnv.elastic_server+' timeout -s KILL '+gauntEnv.matlab_timeout
+                    cmd += ' /usr/local/MATLAB/'+gauntEnv.matlab_release+'/bin/matlab -nosplash -nodesktop -nodisplay'
+                    cmd += ' -r "run(\'matlab_commands.m\');exit"'
+                    statusCode = sh script:cmd, returnStatus:true
+                }catch (Exception ex){
+                    xmlFile =  sh(returnStdout: true, script: 'ls | grep _*Results.xml').trim()
+                    throw new NominalException(ex.getMessage())
+                }finally{
+                    junit testResults: '*.xml', allowEmptyResults: true
+                    // archiveArtifacts artifacts: xmlFile, followSymlinks: false, allowEmptyArchive: true
+                    // get MATLAB hardware test results for logging
+                    if(fileExists(xmlFile)){
                         try{
-                            cmd = 'IIO_URI="ip:'+ip+'" board="'+board+'" M2K_URI="'+getURIFromSerial(board)+'"'
-                            cmd += ' elasticserver='+gauntEnv.elastic_server+' timeout -s KILL '+gauntEnv.matlab_timeout
-                            cmd += ' /usr/local/MATLAB/'+gauntEnv.matlab_release+'/bin/matlab -nosplash -nodesktop -nodisplay'
-                            cmd += ' -r "run(\'matlab_commands.m\');exit"'
-                            statusCode = sh script:cmd, returnStatus:true
-                        }catch (Exception ex){
-                            xmlFile =  sh(returnStdout: true, script: 'ls | grep _*Results.xml').trim()
-                            throw new NominalException(ex.getMessage())
-                        }finally{
-                            junit testResults: '*.xml', allowEmptyResults: true
-                            // archiveArtifacts artifacts: xmlFile, followSymlinks: false, allowEmptyArchive: true
-                            // get MATLAB hardware test results for logging
-                            if(fileExists(xmlFile)){
-                                try{
-                                    parseForLogging ('matlab', xmlFile, board)
-                                }catch(Exception ex){
-                                    println('Parsing MATLAB hardware results failed')
-                                    echo getStackTrace(ex)
-                                }
-                            }
-                            // Print test result summary and set stage status depending on test result
-                            if (statusCode != 0) {
-                                currentBuild.result = 'FAILURE'
-                            }
-                            switch (statusCode) {
-                                case 1:
-                                    unstable("MATLAB: Error encountered when running the tests.")
-                                    break
-                                case 2:
-                                    unstable("MATLAB: Some tests failed.")
-                                    break
-                                case 3:
-                                    unstable("MATLAB: Some tests did not run to completion.")
-                                    break
-                            }
+                            parseForLogging ('matlab', xmlFile, board)
+                        }catch(Exception ex){
+                            println('Parsing MATLAB hardware results failed')
+                            echo getStackTrace(ex)
                         }
+                    }
+                    // Print test result summary and set stage status depending on test result
+                    if (statusCode != 0) {
+                        currentBuild.result = 'FAILURE'
+                    }
+                    switch (statusCode) {
+                        case 1:
+                        unstable("MATLAB: Error encountered when running the tests.")
+                            break
+                        case 2:
+                            unstable("MATLAB: Some tests failed.")
+                            break
+                        case 3:
+                            unstable("MATLAB: Some tests did not run to completion.")
+                            break
                     }
                 }
             }
@@ -1380,7 +1332,13 @@ def set_update_nebula_config(boolean enable) {
  */
 def isMultiBranchPipeline() {
     println("Checking if multibranch pipeline..")
-    def branch = (env.BRANCH_NAME)? "*/${env.BRANCH_NAME}" : ""
+    if (env.BRANCH_NAME){
+        println("Pipeline is multibranch.")
+        branch = "*/${env.BRANCH_NAME}"
+    }else {
+        println("Pipeline is not multibranch.")
+        branch = ""
+    }
     return branch
 }
 
