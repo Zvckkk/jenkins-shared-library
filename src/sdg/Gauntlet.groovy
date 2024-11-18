@@ -1449,7 +1449,7 @@ private def check_required_hardware() {
         def special_naming_cases = [
             "zynqmp-adrv9009-zu11eg-revb-adrv2crr-fmc-revb":\
             "zynqmp-adrv9009-zu11eg-revb-adrv2crr-fmc-revb-jesd204-fsm",
-            "zynqmp-adrv9009-zu11eg-revb-adrv2crr-fmc-revb-sync-fmcomms8":\
+            "zynqmp-adrv9009-zu11eg-revb-adrv2crr-fmc-revb-vsync-fmcomms8":\
             "zynqmp-adrv9009-zu11eg-revb-adrv2crr-fmc-revb-sync-fmcomms8-jesd204-fsm"
         ]
 
@@ -1461,28 +1461,28 @@ private def check_required_hardware() {
                 def board = gauntEnv.boards[k]
                 def agent = gauntEnv.agents[k]
                 if (rh.contains(board)){
-                    println("Agent: "+agent+" Board: "+board)
+                    println("Found required hardware Board: "+ board + " Agent: "+ agent)
                     filtered_board_list.add(board)
                     filtered_agent_list.add(agent)
                     found_rh.add(board)
                 }else{
-                    // map required board name to th naming scheme
-                    if (gauntEnv.include_variants){
-                        def base = board.split("-v")[0]
-                        if (rh.contains(base)){
-                            println("Agent: "+agent+" Board: "+board)
-                            filtered_board_list.add(board)
-                            filtered_agent_list.add(agent)   
-                            if(!found_rh.contains(base)){
-                                found_rh.add(base)
-                            }
-                        }
-                    }else if(special_naming_cases.containsKey(board)){
-                        if(rh.contains(special_naming_cases[board])){
-                            println("Agent: "+agent+" Board: "+board)
-                            filtered_board_list.add(board)
-                            filtered_agent_list.add(agent)
-                            found_rh.add(special_naming_cases[board])
+                    def base = board
+                    def variant = null
+                    // get base name from variant
+                    if(board.contains("-v")){
+                        base = board.split("-v")[0]
+                        variant = board.split("-v")[1]
+                    }
+                    // get base name from special cases, this takes precedence
+                    if(special_naming_cases.containsKey(board)){
+                        base = special_naming_cases[board]
+                    }
+                    if(rh.contains(base)){
+                        println("Found required hardware Board: "+ base + " Variant"+ variant +" Agent: "+ agent)
+                        filtered_board_list.add(board)
+                        filtered_agent_list.add(agent)   
+                        if(!found_rh.contains(base)){
+                            found_rh.add(base)
                         }
                     }
                 }
