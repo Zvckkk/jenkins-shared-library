@@ -1461,7 +1461,7 @@ private def check_required_hardware() {
                 def board = gauntEnv.boards[k]
                 def agent = gauntEnv.agents[k]
                 if (rh.contains(board)){
-                    println("Found required hardware Board: "+board+ " Agent: "+agent)
+                    println("Found required hardware Board: "+ board + " Agent: "+ agent)
                     filtered_board_list.add(board)
                     filtered_agent_list.add(agent)
                     found_rh.add(board)
@@ -1478,7 +1478,7 @@ private def check_required_hardware() {
                         base = special_naming_cases[board]
                     }
                     if(rh.contains(base)){
-                        println("Found required hardware Board: "+base+ " Agent: "+agent)
+                        println("Found required hardware Board: "+ base + " Variant"+ variant +" Agent: "+ agent)
                         filtered_board_list.add(board)
                         filtered_agent_list.add(agent)   
                         if(!found_rh.contains(base)){
