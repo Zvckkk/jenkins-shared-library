@@ -43,7 +43,11 @@ private def setup_agents() {
             node(agent_name) {
                 stage('Query agents') {
                     // Get necessary configuration for basic work
-                    board = nebula('update-config board-config board-name')
+                    if (gauntEnv.workspace == '') {
+                        gauntEnv.workspace = env.WORKSPACE
+                        gauntEnv.build_no = env.BUILD_NUMBER
+                    }
+                    board = nebula('update-config board-config board-name -y ' + gauntEnv.workspace + '/' + gauntEnv.build_no +'/nebula-config/' + agent_name)
                     board_map[agent_name] = board
                 }
             }
@@ -85,12 +89,14 @@ private def update_agent() {
                 // automatically update nebula config
                 if(gauntEnv.update_nebula_config){
                     stage('Update Nebula Config') {
-                        run_i('sudo rm -rf nebula-config')
+                        nebula_config_path = env.BUILD_NUMBER + '/nebula-config'
                         if(gauntEnv.nebula_config_source == 'github'){
-                            run_i('git clone -b "' + gauntEnv.nebula_config_branch + '" ' + gauntEnv.nebula_config_repo, true)
+                            dir(env.BUILD_NUMBER){
+                                run_i('git clone -b "' + gauntEnv.nebula_config_branch + '" ' + gauntEnv.nebula_config_repo, true)
+                            }
                         }else if(gauntEnv.nebula_config_source == 'netbox'){
-                            run_i('mkdir nebula-config')
-                            dir('nebula-config'){
+                            run_i('mkdir -p ' + nebula_config_path)
+                            dir(nebula_config_path){
                                 def custom = ""
                                 if(gauntEnv.netbox_include_variants == false){
                                     custom = custom + " --no-include-variants"
@@ -120,14 +126,6 @@ private def update_agent() {
                         }else{
                             println(gauntEnv.nebula_config_source + ' as config source is not supported yet.')
                         }
-                        
-                        if (fileExists('nebula-config/' + agent_name)){
-                            run_i('sudo mv nebula-config/' + agent_name + ' /etc/default/nebula')
-                        }else{
-                            // create and empty file
-                            run_i('sudo mv nebula-config/null-agent' + ' /etc/default/nebula')
-                        }
-                        
                     }
                 }
                 // clean up residue containers and detached screen sessions
@@ -971,6 +969,7 @@ private def run_agents() {
     docker_args.add('-v /etc/default:/default:ro')
     docker_args.add('-v /dev:/dev')
     docker_args.add('-v /etc/timezone:/etc/timezone:ro')
+    
     docker_args.add('-v /etc/localtime:/etc/localtime:ro')
     if (gauntEnv.docker_host_mode) {
         docker_args.add('--network host')
@@ -1014,16 +1013,18 @@ private def run_agents() {
         def k
         def ml_variants = ['rx','tx','rx_tx']
         def ml_variant_index = 0
+        def docker_args_agent = ''
         node(agent) {
             try {
+                docker_args_agent = docker_args + ' -v '+ gauntEnv.workspace + '/' + gauntEnv.build_no + '/nebula-config/' + env.NODE_NAME + ':/tmp/nebula:ro'
                 if (enable_update_boot_pre_docker_flag)
                     pre_docker_closure.call(board)
-                docker.image(docker_image_name).inside(docker_args) {
+                docker.image(docker_image_name).inside(docker_args_agent) {
                     try {
                         stage('Setup Docker') {
                             sh 'apt-get clean'
                             sh 'cd /var/lib/apt && mv lists lists.bak; mkdir -p lists/partial'
-                            sh 'cp /default/nebula /etc/default/nebula'
+                            sh 'cp /tmp/nebula /etc/default/nebula'
                             sh 'cp /default/pip.conf /etc/pip.conf || true'
                             sh 'cp /default/pydistutils.cfg /root/.pydistutils.cfg || true'
                             sh 'mkdir -p /root/.config/pip && cp /default/pip.conf /root/.config/pip/pip.conf || true'
