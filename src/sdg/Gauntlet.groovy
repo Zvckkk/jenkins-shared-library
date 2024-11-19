@@ -47,7 +47,7 @@ private def setup_agents() {
                         gauntEnv.workspace = env.WORKSPACE
                         gauntEnv.build_no = env.BUILD_NUMBER
                     }
-                    board = nebula('update-config board-config board-name -y ' + gauntEnv.workspace + '/' + gauntEnv.build_no +'/nebula-config/' + agent_name)
+                    board = nebula('update-config board-config board-name -y ' + gauntEnv.nebula_config_path + '/' +agent_name)
                     board_map[agent_name] = board
                 }
             }
@@ -89,14 +89,15 @@ private def update_agent() {
                 // automatically update nebula config
                 if(gauntEnv.update_nebula_config){
                     stage('Update Nebula Config') {
-                        nebula_config_path = env.BUILD_NUMBER + '/nebula-config'
+                        gauntEnv.nebula_config_path = '/tmp/'+ env.JOB_NAME + '/'+ env.BUILD_NUMBER
                         if(gauntEnv.nebula_config_source == 'github'){
-                            dir(env.BUILD_NUMBER){
+                            dir(gauntEnv.nebula_config_path){
                                 run_i('git clone -b "' + gauntEnv.nebula_config_branch + '" ' + gauntEnv.nebula_config_repo, true)
                             }
                         }else if(gauntEnv.nebula_config_source == 'netbox'){
-                            run_i('mkdir -p ' + nebula_config_path)
-                            dir(nebula_config_path){
+                            gauntEnv.nebula_config_path += '/nebula-config'
+                            run_i('mkdir -p ' + gauntEnv.nebula_config_path)
+                            dir(gauntEnv.nebula_config_path){
                                 def custom = ""
                                 if(gauntEnv.netbox_include_variants == false){
                                     custom = custom + " --no-include-variants"
@@ -1016,7 +1017,7 @@ private def run_agents() {
         def docker_args_agent = ''
         node(agent) {
             try {
-                docker_args_agent = docker_args + ' -v '+ gauntEnv.workspace + '/' + gauntEnv.build_no + '/nebula-config/' + env.NODE_NAME + ':/tmp/nebula:ro'
+                docker_args_agent = docker_args + ' -v '+ gauntEnv.nebula_config_path + '/' + env.NODE_NAME + ':/tmp/nebula:ro'
                 if (enable_update_boot_pre_docker_flag)
                     pre_docker_closure.call(board)
                 docker.image(docker_image_name).inside(docker_args_agent) {
