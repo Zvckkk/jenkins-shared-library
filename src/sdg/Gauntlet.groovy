@@ -1040,10 +1040,10 @@ private def run_agents() {
                                 def board_status = nebula("netbox.board-status --board-name=" + board)
                                 if (board_status == "Active"){
                                     comment = "Board is Active. Lock acquired and used by ${env.JOB_NAME} ${env.BUILD_NUMBER}"
-                                    nebula("netbox.log-journal --board-name=" +board+" --kind='info' --comment="+ comment)
+                                    nebula("netbox.log-journal --board-name=" +board+" --kind='info' --comment='"+ comment+"'")
                                 }else{
                                     comment = "Board is not active. Releasing lock acquired and skipping next stages."
-                                    nebula("netbox.log-journal --board-name=" +board+" --kind='info' --comment="+ comment)
+                                    nebula("netbox.log-journal --board-name=" +board+" --kind='info' --comment='"+ comment+"'")
                                     throw new NominalException('Board is not active. Skipping succeeding stages.') 
                                 }
                             }
