@@ -33,6 +33,7 @@ private def call(hdlBranch, linuxBranch, bootPartitionBranch,firmwareVersion, bo
             docker_args: ['MATLAB','Vivado'],
             docker_host_mode: true,
             update_nebula_config: true,
+            check_device_status: true,
             nebula_config_source: 'netbox',
             netbox_test_agent: false,
             netbox_ip: '',
