@@ -598,7 +598,7 @@ def stage_library(String stage_name) {
                             run_i('git clone -b '+ gauntEnv.libad9361_iio_branch + ' ' + gauntEnv.libad9361_iio_repo, true)
                             dir('libad9361-iio')
                             {
-                                sh 'mkdir build'
+                                sh 'mkdir -p build'
                                 dir('build')
                                 {
                                     sh 'cmake -DPYTHON_BINDINGS=ON ..'
@@ -738,7 +738,7 @@ def stage_library(String stage_name) {
                 sh 'git clone https://github.com/analogdevicesinc/libtinyiiod.git'
                 dir('libtinyiiod')
                 {
-                    sh 'mkdir build'
+                    sh 'mkdir -p build'
                     dir('build')
                     {
                         sh 'cmake -DBUILD_EXAMPLES=OFF ..'
@@ -750,7 +750,7 @@ def stage_library(String stage_name) {
                 sh 'git clone -b v0.1.0 https://github.com/analogdevicesinc/iio-emu.git'
                 dir('iio-emu')
                 {
-                    sh 'mkdir build'
+                    sh 'mkdir -p build'
                     dir('build')
                     {
                         sh 'cmake -DBUILD_TOOLS=ON ..'
@@ -1707,7 +1707,7 @@ private def install_libiio() {
             submoduleCfg: [],
             userRemoteConfigs: [[credentialsId: '', url: "${gauntEnv.libiio_repo}"]]
         ])
-        sh 'mkdir build'
+        sh 'mkdir -p build'
         dir('build')
         {
             sh 'cmake .. -DPYTHON_BINDINGS=ON -DWITH_SERIAL_BACKEND=ON -DHAVE_DNS_SD=OFF'
