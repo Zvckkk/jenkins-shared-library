@@ -82,10 +82,12 @@ private def update_agent() {
 
         jobs[agent_name] = {
             node(agent_name) {
-                // stage('Update agents') {
-                //     def deps = check_update_container_lib(update_container_lib)
-                //     setupAgent(deps, false, update_requirements)
-                // }
+                // clean up residue containers and detached screen sessions
+                stage('Clean up residue docker containers') {
+                    sh 'sudo docker ps -q -f status=exited | xargs --no-run-if-empty sudo docker rm'
+                    sh 'sudo screen -ls | grep Detached | cut -d. -f1 | awk "{print $1}" | sudo xargs -r kill' //close all detached screen session on the agent
+                    cleanWs()
+                }
                 // automatically update nebula config
                 if(gauntEnv.update_nebula_config){
                     stage('Update Nebula Config') {
@@ -128,11 +130,6 @@ private def update_agent() {
                             println(gauntEnv.nebula_config_source + ' as config source is not supported yet.')
                         }
                     }
-                }
-                // clean up residue containers and detached screen sessions
-                stage('Clean up residue docker containers') {
-                    sh 'sudo docker ps -q -f status=exited | xargs --no-run-if-empty sudo docker rm'
-                    sh 'sudo screen -ls | grep Detached | cut -d. -f1 | awk "{print $1}" | sudo xargs -r kill' //close all detached screen session on the agent
                 }
             }
         }
