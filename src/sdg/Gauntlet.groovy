@@ -82,10 +82,12 @@ private def update_agent() {
 
         jobs[agent_name] = {
             node(agent_name) {
-                // stage('Update agents') {
-                //     def deps = check_update_container_lib(update_container_lib)
-                //     setupAgent(deps, false, update_requirements)
-                // }
+                // clean up residue containers and detached screen sessions
+                stage('Clean up residue docker containers') {
+                    sh 'sudo docker ps -q -f status=exited | xargs --no-run-if-empty sudo docker rm'
+                    sh 'sudo screen -ls | grep Detached | cut -d. -f1 | awk "{print $1}" | sudo xargs -r kill' //close all detached screen session on the agent
+                    cleanWs()
+                }
                 // automatically update nebula config
                 if(gauntEnv.update_nebula_config){
                     stage('Update Nebula Config') {
@@ -128,11 +130,6 @@ private def update_agent() {
                             println(gauntEnv.nebula_config_source + ' as config source is not supported yet.')
                         }
                     }
-                }
-                // clean up residue containers and detached screen sessions
-                stage('Clean up residue docker containers') {
-                    sh 'sudo docker ps -q -f status=exited | xargs --no-run-if-empty sudo docker rm'
-                    sh 'sudo screen -ls | grep Detached | cut -d. -f1 | awk "{print $1}" | sudo xargs -r kill' //close all detached screen session on the agent
                 }
             }
         }
@@ -601,7 +598,7 @@ def stage_library(String stage_name) {
                             run_i('git clone -b '+ gauntEnv.libad9361_iio_branch + ' ' + gauntEnv.libad9361_iio_repo, true)
                             dir('libad9361-iio')
                             {
-                                sh 'mkdir build'
+                                sh 'mkdir -p build'
                                 dir('build')
                                 {
                                     sh 'cmake -DPYTHON_BINDINGS=ON ..'
@@ -741,7 +738,7 @@ def stage_library(String stage_name) {
                 sh 'git clone https://github.com/analogdevicesinc/libtinyiiod.git'
                 dir('libtinyiiod')
                 {
-                    sh 'mkdir build'
+                    sh 'mkdir -p build'
                     dir('build')
                     {
                         sh 'cmake -DBUILD_EXAMPLES=OFF ..'
@@ -753,7 +750,7 @@ def stage_library(String stage_name) {
                 sh 'git clone -b v0.1.0 https://github.com/analogdevicesinc/iio-emu.git'
                 dir('iio-emu')
                 {
-                    sh 'mkdir build'
+                    sh 'mkdir -p build'
                     dir('build')
                     {
                         sh 'cmake -DBUILD_TOOLS=ON ..'
@@ -1710,7 +1707,7 @@ private def install_libiio() {
             submoduleCfg: [],
             userRemoteConfigs: [[credentialsId: '', url: "${gauntEnv.libiio_repo}"]]
         ])
-        sh 'mkdir build'
+        sh 'mkdir -p build'
         dir('build')
         {
             sh 'cmake .. -DPYTHON_BINDINGS=ON -DWITH_SERIAL_BACKEND=ON -DHAVE_DNS_SD=OFF'
