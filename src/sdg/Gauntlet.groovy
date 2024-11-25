@@ -1080,9 +1080,6 @@ private def run_agents() {
                                 }
                             println("Cleaning up after board stages");
                             cleanWs();
-                            stage(){
-
-                            }
                         }
                     }
                 }
