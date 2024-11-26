@@ -981,28 +981,33 @@ private def run_agents() {
         def k
         def ml_variants = ['rx','tx','rx_tx']
         def ml_variant_index = 0
+        def lock_name = extractLockName(board, agent)
+
         node(agent) {
-            try{
-                gauntEnv.internal_stages_to_skip[board] = 0; // Initialize
-                for (k = 0; k < num_stages; k++) {
-                    if (gauntEnv.internal_stages_to_skip[board] > 0) {
-                        println("Skipping test stage")
-                        gauntEnv.internal_stages_to_skip[board]--
-                        continue;
+            echo "Acquiring lock for ${lock_name}"
+            lock(lock_name){
+                try{
+                    gauntEnv.internal_stages_to_skip[board] = 0; // Initialize
+                    for (k = 0; k < num_stages; k++) {
+                        if (gauntEnv.internal_stages_to_skip[board] > 0) {
+                            println("Skipping test stage")
+                            gauntEnv.internal_stages_to_skip[board]--
+                            continue;
+                        }
+                        println("Stage called for board: "+board)
+                        println("Num arguments for stage: "+stages[k].maximumNumberOfParameters().toString()) 
+                        if ((stages[k].maximumNumberOfParameters() > 1) && gauntEnv.toolbox_generated_bootbin)
+                            stages[k].call(board, ml_variants[ml_variant_index++])
+                        else
+                            stages[k].call(board)
                     }
-                    println("Stage called for board: "+board)
-                    println("Num arguments for stage: "+stages[k].maximumNumberOfParameters().toString()) 
-                    if ((stages[k].maximumNumberOfParameters() > 1) && gauntEnv.toolbox_generated_bootbin)
-                        stages[k].call(board, ml_variants[ml_variant_index++])
-                    else
-                        stages[k].call(board)
+                }catch(NominalException ex){
+                    println("oneNode: A nominal exception was encountered ${ex.getMessage()}")
+                    println("Stopping execution of stages for ${board}")
+                }finally {
+                    println("Cleaning up after board stages");
+                    cleanWs();
                 }
-            }catch(NominalException ex){
-                println("oneNode: A nominal exception was encountered ${ex.getMessage()}")
-                println("Stopping execution of stages for ${board}")
-            }finally {
-                println("Cleaning up after board stages");
-                cleanWs();
             }
         }
     }
@@ -1012,70 +1017,75 @@ private def run_agents() {
         def ml_variants = ['rx','tx','rx_tx']
         def ml_variant_index = 0
         def docker_args_agent = ''
+        def lock_name = extractLockName(board, agent)
+
         node(agent) {
-            try {
-                docker_args_agent = docker_args + ' -v '+ gauntEnv.nebula_config_path + '/' + env.NODE_NAME + ':/tmp/nebula:ro'
-                if (enable_update_boot_pre_docker_flag)
-                    pre_docker_closure.call(board)
-                docker.image(docker_image_name).inside(docker_args_agent) {
-                    try {
-                        stage('Setup Docker') {
-                            sh 'apt-get clean'
-                            sh 'cd /var/lib/apt && mv lists lists.bak; mkdir -p lists/partial'
-                            sh 'cp /tmp/nebula /etc/default/nebula'
-                            sh 'cp /default/pip.conf /etc/pip.conf || true'
-                            sh 'cp /default/pydistutils.cfg /root/.pydistutils.cfg || true'
-                            sh 'mkdir -p /root/.config/pip && cp /default/pip.conf /root/.config/pip/pip.conf || true'
-                            sh 'cp /default/pyadi_test.yaml /etc/default/pyadi_test.yaml || true'
-                            def deps = check_update_container_lib(update_container)
-                            if (deps.size()>0){
-                                setupAgent(deps, true, update_requirements)
+            echo "Acquiring lock for ${lock_name}"
+            lock(lock_name){
+                try {
+                    docker_args_agent = docker_args + ' -v '+ gauntEnv.nebula_config_path + '/' + env.NODE_NAME + ':/tmp/nebula:ro'
+                    if (enable_update_boot_pre_docker_flag)
+                        pre_docker_closure.call(board)
+                    docker.image(docker_image_name).inside(docker_args_agent) {
+                        try {
+                            stage('Setup Docker') {
+                                sh 'apt-get clean'
+                                sh 'cd /var/lib/apt && mv lists lists.bak; mkdir -p lists/partial'
+                                sh 'cp /tmp/nebula /etc/default/nebula'
+                                sh 'cp /default/pip.conf /etc/pip.conf || true'
+                                sh 'cp /default/pydistutils.cfg /root/.pydistutils.cfg || true'
+                                sh 'mkdir -p /root/.config/pip && cp /default/pip.conf /root/.config/pip/pip.conf || true'
+                                sh 'cp /default/pyadi_test.yaml /etc/default/pyadi_test.yaml || true'
+                                def deps = check_update_container_lib(update_container)
+                                if (deps.size()>0){
+                                    setupAgent(deps, true, update_requirements)
+                                }
+                                // Above cleans up so we need to move to a valid folder
+                                sh 'cd /tmp'
                             }
-                            // Above cleans up so we need to move to a valid folder
-                            sh 'cd /tmp'
-                        }
-                        if (gauntEnv.check_device_status){
-                            stage('Check Device Status'){
-                                def board_status = nebula("netbox.board-status --board-name=" + board)
-                                if (board_status == "Active"){
-                                    comment = "Board is Active. Lock acquired and used by ${env.JOB_NAME} ${env.BUILD_NUMBER}"
-                                    nebula("netbox.log-journal --board-name=" +board+" --kind='info' --comment='"+ comment+"'")
-                                }else{
-                                    comment = "Board is not active. Skipping next stages of ${env.JOB_NAME} ${env.BUILD_NUMBER}"
-                                    nebula("netbox.log-journal --board-name=" +board+" --kind='info' --comment='"+ comment+"'")
-                                    throw new NominalException('Board is not active. Skipping succeeding stages.') 
+                            if (gauntEnv.check_device_status){
+                                stage('Check Device Status'){
+                                    def board_status = nebula("netbox.board-status --board-name=" + board)
+                                    if (board_status == "Active"){
+                                        comment = "Board is Active. Lock acquired and used by ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+                                        nebula("netbox.log-journal --board-name=" +board+" --kind='info' --comment='"+ comment+"'")
+                                    }else{
+                                        comment = "Board is not active. Skipping next stages of ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+                                        nebula("netbox.log-journal --board-name=" +board+" --kind='info' --comment='"+ comment+"'")
+                                        throw new NominalException('Board is not active. Skipping succeeding stages.') 
+                                    }
                                 }
                             }
-                        }
-                        gauntEnv.internal_stages_to_skip[board] = 0; // Initialize
-                        for (k = 0; k < num_stages; k++) {
-                            if (gauntEnv.internal_stages_to_skip[board] > 0) {
-                                println("Skipping test stage")
-                                gauntEnv.internal_stages_to_skip[board]--
-                                continue;
+                            gauntEnv.internal_stages_to_skip[board] = 0; // Initialize
+                            for (k = 0; k < num_stages; k++) {
+                                if (gauntEnv.internal_stages_to_skip[board] > 0) {
+                                    println("Skipping test stage")
+                                    gauntEnv.internal_stages_to_skip[board]--
+                                    continue;
+                                }
+                                println("Stage called for board: "+board)
+                                println("Num arguments for stage: "+stages[k].maximumNumberOfParameters().toString()) 
+                                if ((stages[k].maximumNumberOfParameters() > 1) && gauntEnv.toolbox_generated_bootbin)
+                                    stages[k].call(board, ml_variants[ml_variant_index++])
+                                else
+                                    stages[k].call(board)
                             }
-                            println("Stage called for board: "+board)
-                            println("Num arguments for stage: "+stages[k].maximumNumberOfParameters().toString()) 
-                            if ((stages[k].maximumNumberOfParameters() > 1) && gauntEnv.toolbox_generated_bootbin)
-                                stages[k].call(board, ml_variants[ml_variant_index++])
-                            else
-                                stages[k].call(board)
+                        }catch(NominalException ex){
+                            println("oneNodeDocker: A nominal exception was encountered ${ex.getMessage()}")
+                            println("Stopping execution of stages for ${board}")
+                        }finally {
+                            if (gauntEnv.check_device_status){
+                                    comment = "Releasing lock by ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+                                    nebula("netbox.log-journal --board-name=" +board+" --kind='info' --comment='"+ comment+"'")
+                                }
+                            println("Cleaning up after board stages");
+                            cleanWs();
                         }
-                    }catch(NominalException ex){
-                        println("oneNodeDocker: A nominal exception was encountered ${ex.getMessage()}")
-                        println("Stopping execution of stages for ${board}")
-                    }finally {
-                        if (gauntEnv.check_device_status){
-                                comment = "Releasing lock by ${env.JOB_NAME} ${env.BUILD_NUMBER}"
-                                nebula("netbox.log-journal --board-name=" +board+" --kind='info' --comment='"+ comment+"'")
-                            }
-                        println("Cleaning up after board stages");
-                        cleanWs();
                     }
                 }
-            }
-            finally {
-                sh 'docker ps -q -f status=exited | xargs --no-run-if-empty docker rm'
+                finally {
+                    sh 'docker ps -q -f status=exited | xargs --no-run-if-empty docker rm'
+                }
             }
         }
     }
@@ -1100,33 +1110,26 @@ jobs[agent+"-"+board] = {
   }
 }
 */
-        // Always lock DUTs
-        def lock_name = extractLockName(board, agent)
-        echo "Acquiring lock for ${lock_name}"
 
         if (gauntEnv.enable_docker) {
             println("Enable resource queueing")
             jobs[agent + '-' + board] = {
-                lock(lock_name){
-                    oneNodeDocker(
-                        agent,
-                        num_stages,
-                        stages,
-                        board,
-                        docker_image,
-                        enable_update_boot_pre_docker,
-                        pre_docker_cls,
-                        docker_status,
-                        update_container_lib,
-                        update_lib_requirements
-                    )
-                }
+                oneNodeDocker(
+                    agent,
+                    num_stages,
+                    stages,
+                    board,
+                    docker_image,
+                    enable_update_boot_pre_docker,
+                    pre_docker_cls,
+                    docker_status,
+                    update_container_lib,
+                    update_lib_requirements
+                )
             };
         } else {
             jobs[agent + '-' + board] = {
-                lock(lock_name) {
-                    oneNode(agent, num_stages, stages, board, docker_status)
-                }
+                oneNode(agent, num_stages, stages, board, docker_status)
             };
         }
     }
