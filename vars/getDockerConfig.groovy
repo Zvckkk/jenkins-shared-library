@@ -2,7 +2,7 @@
 def call(java.util.ArrayList listOfResources, matlablic, matlabHSPro=true, UseNFS=false) {
     assert listOfResources instanceof java.util.List
 
-    args = ['--privileged']
+    args = ['--privileged -v "/etc/apt/apt.conf.d/00aptproxy":"/etc/apt/apt.conf.d/00aptproxy":ro']
 
     for (i = 0; i < listOfResources.size(); i++) {
         if (listOfResources[i].equalsIgnoreCase( 'MATLAB' )) {
