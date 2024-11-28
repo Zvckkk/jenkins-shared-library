@@ -95,6 +95,7 @@ private def update_agent() {
                         if(gauntEnv.nebula_config_source == 'github'){
                             dir(gauntEnv.nebula_config_path){
                                 run_i('git clone -b "' + gauntEnv.nebula_config_branch + '" ' + gauntEnv.nebula_config_repo, true)
+                                gauntEnv.nebula_config_path += '/nebula-config'
                             }
                         }else if(gauntEnv.nebula_config_source == 'netbox'){
                             gauntEnv.nebula_config_path += '/nebula-config'
