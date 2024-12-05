@@ -1030,8 +1030,6 @@ private def run_agents() {
                         try {
                             stage('Setup Docker') {
                                 sh 'apt-get clean'
-                                sh 'cd /var/lib/apt && mv lists lists.bak; mkdir -p lists/partial'
-                                sh 'apt-get clean'
                                 sh 'cp /tmp/nebula /etc/default/nebula'
                                 sh 'mkdir -p ~/.pip && cp /default/pip/pip.conf ~/.pip/pip.conf || true'
                                 sh 'cp /default/pyadi_test.yaml /etc/default/pyadi_test.yaml || true'
