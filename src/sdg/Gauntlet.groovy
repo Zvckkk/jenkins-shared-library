@@ -642,7 +642,8 @@ def stage_library(String stage_name) {
                 ])
                 createMFile()
                 try{
-                    cmd = 'IIO_URI="ip:'+ip+'" board="'+board+'" M2K_URI="'+getURIFromSerial(board)+'"'
+                    cmd = 'chown -R user $(pwd) ; ' 
+                    cmd += 'sudo -u user IIO_URI="ip:'+ip+'" board="'+board+'" M2K_URI="'+getURIFromSerial(board)+'"'
                     cmd += ' elasticserver='+gauntEnv.elastic_server+' timeout -s KILL '+gauntEnv.matlab_timeout
                     cmd += ' /usr/local/MATLAB/'+gauntEnv.matlab_release+'/bin/matlab -nosplash -nodesktop -nodisplay'
                     cmd += ' -r "run(\'matlab_commands.m\');exit"'
