@@ -1698,7 +1698,7 @@ private def install_libiio() {
         }
     }
     else {
-        def isBranch = sh(script: "git ls-remote --heads ${gauntEnv.libiio_repo} ${gauntEnv.libiio_branch}", returnStatus: true) == 0
+        def isBranch = sh(script: "git ls-remote --heads ${gauntEnv.libiio_repo} ${gauntEnv.libiio_branch}", returnStatus: true).trim().contains("refs/heads/${gauntEnv.libiio_branch}")
         def scmVars = checkout([
             $class : 'GitSCM',
             branches : [[name: isBranch ? "*/${gauntEnv.libiio_branch}" : "refs/tags/${gauntEnv.libiio_branch}"]],
