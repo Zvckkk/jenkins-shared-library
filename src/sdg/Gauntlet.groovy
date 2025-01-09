@@ -509,7 +509,7 @@ def stage_library(String stage_name) {
                         }
                         //scm pyadi-iio
                         dir('pyadi-iio'){
-                            def branch = isMultiBranchPipeline() ?: "${gauntEnv.pyadi_iio_branch}"
+                            def branch = isMultiBranchPipeline() ?: "*/${gauntEnv.pyadi_iio_branch}"
                             checkout([
                                 $class : 'GitSCM',
                                 branches : [[name: branch]],
@@ -631,7 +631,7 @@ def stage_library(String stage_name) {
                 def description = ""
                 def xmlFile = board+'_HWTestResults.xml'
                 sh 'cp -r /root/.matlabro /root/.matlab'
-                def branch = isMultiBranchPipeline() ?: "${gauntEnv.matlab_branch}"
+                def branch = isMultiBranchPipeline() ?: "*/${gauntEnv.matlab_branch}"
                 checkout([
                     $class : 'GitSCM',
                     branches : [[name: branch]],
@@ -1676,9 +1676,7 @@ private def install_nebula(update_requirements=false) {
         def scmVars = checkout([
             $class : 'GitSCM',
             branches : [[name: "*/${gauntEnv.nebula_branch}"]],
-            doGenerateSubmoduleConfigurations: false,
             extensions: [[$class: 'LocalBranch', localBranch: "**"]],
-            submoduleCfg: [],
             userRemoteConfigs: [[credentialsId: '', url: "${gauntEnv.nebula_repo}"]]
         ])
         sh 'pip3 uninstall nebula -y || true'
@@ -1702,10 +1700,8 @@ private def install_libiio() {
     else {
         def scmVars = checkout([
             $class : 'GitSCM',
-            branches : [[name: "refs/tags/${gauntEnv.libiio_branch}"]],
-            doGenerateSubmoduleConfigurations: false,
+            branches : [[name: "*/${gauntEnv.libiio_branch}"]],
             extensions: [[$class: 'LocalBranch', localBranch: "**"]],
-            submoduleCfg: [],
             userRemoteConfigs: [[credentialsId: '', url: "${gauntEnv.libiio_repo}"]]
         ])
         sh 'mkdir -p build'
@@ -1738,9 +1734,7 @@ private def install_telemetry(update_requirements=false){
         def scmVars = checkout([
             $class : 'GitSCM',
             branches : [[name: "*/${gauntEnv.telemetry_branch}"]],
-            doGenerateSubmoduleConfigurations: false,
             extensions: [[$class: 'LocalBranch', localBranch: "**"]],
-            submoduleCfg: [],
             userRemoteConfigs: [[credentialsId: '', url: "${gauntEnv.telemetry_repo}"]]
         ])
         if (update_requirements){
