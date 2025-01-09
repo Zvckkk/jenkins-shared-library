@@ -509,7 +509,7 @@ def stage_library(String stage_name) {
                         }
                         //scm pyadi-iio
                         dir('pyadi-iio'){
-                            def branch = isMultiBranchPipeline() ?: "${gauntEnv.pyadi_iio_branch}"
+                            def branch = isMultiBranchPipeline(gauntEnv.pyadi_iio_repo) ?: "${gauntEnv.pyadi_iio_branch}"
                             checkout([
                                 $class : 'GitSCM',
                                 branches : [[name: branch]],
@@ -631,7 +631,7 @@ def stage_library(String stage_name) {
                 def description = ""
                 def xmlFile = board+'_HWTestResults.xml'
                 sh 'cp -r /root/.matlabro /root/.matlab'
-                def branch = isMultiBranchPipeline() ?: "${gauntEnv.matlab_branch}"
+                def branch = isMultiBranchPipeline(gauntEnv.matlab_repo) ?: "${gauntEnv.matlab_branch}"
                 checkout([
                     $class : 'GitSCM',
                     branches : [[name: branch]],
@@ -1348,13 +1348,19 @@ def set_update_nebula_config(boolean enable) {
  * Check if project is part of a multibranch pipeline using 'checkout scm'
  * Declaring the GitHub Project url in a non-multibranch pipeline does not conflict with checking.
  */
-def isMultiBranchPipeline() {
+def isMultiBranchPipeline(repo_url) {
     println("Checking if multibranch pipeline..")
-    if (env.BRANCH_NAME){
-        println("Pipeline is multibranch.")
-        branch = "*/${env.BRANCH_NAME}"
-    }else {
-        println("Pipeline is not multibranch.")
+    //check if the pipeline is for this repo
+    def actualRepoUrl = scm.userRemoteConfigs[0].url
+    if (actualRepoUrl == repo_url){  
+        if (env.BRANCH_NAME){
+            println("Pipeline is multibranch.")
+            branch = "*/${env.BRANCH_NAME}"
+        }else {
+            println("Pipeline is not multibranch.")
+            branch = ""
+        }
+    } else {
         branch = ""
     }
     return branch
