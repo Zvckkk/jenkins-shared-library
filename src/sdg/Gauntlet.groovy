@@ -509,7 +509,7 @@ def stage_library(String stage_name) {
                         }
                         //scm pyadi-iio
                         dir('pyadi-iio'){
-                            def branch = isMultiBranchPipeline() ?: "${gauntEnv.pyadi_iio_branch}"
+                            def branch = isMultiBranchPipeline() ?: "*/${gauntEnv.pyadi_iio_branch}"
                             checkout([
                                 $class : 'GitSCM',
                                 branches : [[name: branch]],
@@ -631,7 +631,7 @@ def stage_library(String stage_name) {
                 def description = ""
                 def xmlFile = board+'_HWTestResults.xml'
                 sh 'cp -r /root/.matlabro /root/.matlab'
-                def branch = isMultiBranchPipeline() ?: "${gauntEnv.matlab_branch}"
+                def branch = isMultiBranchPipeline() ?: "*/${gauntEnv.matlab_branch}"
                 checkout([
                     $class : 'GitSCM',
                     branches : [[name: branch]],
