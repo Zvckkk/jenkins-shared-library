@@ -1349,18 +1349,19 @@ def set_update_nebula_config(boolean enable) {
  * Declaring the GitHub Project url in a non-multibranch pipeline does not conflict with checking.
  */
 def isMultiBranchPipeline(repo_url) {
-    println("Checking if multibranch pipeline..")
-    //check if the pipeline is for this repo
-    def actualRepoUrl = scm.userRemoteConfigs[0].url
-    if (actualRepoUrl == repo_url){  
-        if (env.BRANCH_NAME){
-            println("Pipeline is multibranch.")
+    println("Checking if multibranch pipeline..") 
+    if (env.BRANCH_NAME){
+        println("Pipeline is multibranch.")
+        //check if the multibranch pipeline is for this repo
+        def actualRepoUrl = scm.userRemoteConfigs[0].url
+        if (actualRepoUrl == repo_url){
             branch = "*/${env.BRANCH_NAME}"
-        }else {
-            println("Pipeline is not multibranch.")
+        }else{
+            //repo is cloned only in another multibranch pipeline
             branch = ""
-        }
-    } else {
+        }            
+    }else {
+        println("Pipeline is not multibranch.")
         branch = ""
     }
     return branch
