@@ -509,7 +509,7 @@ def stage_library(String stage_name) {
                         }
                         //scm pyadi-iio
                         dir('pyadi-iio'){
-                            def branch = isMultiBranchPipeline() ?: "*/${gauntEnv.pyadi_iio_branch}"
+                            def branch = isMultiBranchPipeline(gauntEnv.pyadi_iio_repo) ?: "${gauntEnv.pyadi_iio_branch}"
                             checkout([
                                 $class : 'GitSCM',
                                 branches : [[name: branch]],
@@ -631,7 +631,7 @@ def stage_library(String stage_name) {
                 def description = ""
                 def xmlFile = board+'_HWTestResults.xml'
                 sh 'cp -r /root/.matlabro /root/.matlab'
-                def branch = isMultiBranchPipeline() ?: "*/${gauntEnv.matlab_branch}"
+                def branch = isMultiBranchPipeline(gauntEnv.matlab_repo) ?: "${gauntEnv.matlab_branch}"
                 checkout([
                     $class : 'GitSCM',
                     branches : [[name: branch]],
@@ -1348,11 +1348,18 @@ def set_update_nebula_config(boolean enable) {
  * Check if project is part of a multibranch pipeline using 'checkout scm'
  * Declaring the GitHub Project url in a non-multibranch pipeline does not conflict with checking.
  */
-def isMultiBranchPipeline() {
-    println("Checking if multibranch pipeline..")
+def isMultiBranchPipeline(repo_url) {
+    println("Checking if multibranch pipeline..") 
     if (env.BRANCH_NAME){
         println("Pipeline is multibranch.")
-        branch = "*/${env.BRANCH_NAME}"
+        //check if the multibranch pipeline is for this repo
+        def actualRepoUrl = scm.userRemoteConfigs[0].url
+        if (actualRepoUrl == repo_url){
+            branch = "*/${env.BRANCH_NAME}"
+        }else{
+            //repo is cloned only in another multibranch pipeline
+            branch = ""
+        }            
     }else {
         println("Pipeline is not multibranch.")
         branch = ""
@@ -1698,9 +1705,10 @@ private def install_libiio() {
         }
     }
     else {
+        def isBranch = sh(script: "git ls-remote --heads ${gauntEnv.libiio_repo} ${gauntEnv.libiio_branch}", returnStdout: true).trim().contains("refs/heads/${gauntEnv.libiio_branch}")
         def scmVars = checkout([
             $class : 'GitSCM',
-            branches : [[name: "*/${gauntEnv.libiio_branch}"]],
+            branches : [[name: isBranch ? "*/${gauntEnv.libiio_branch}" : "refs/tags/${gauntEnv.libiio_branch}"]],
             extensions: [[$class: 'LocalBranch', localBranch: "**"]],
             userRemoteConfigs: [[credentialsId: '', url: "${gauntEnv.libiio_repo}"]]
         ])
