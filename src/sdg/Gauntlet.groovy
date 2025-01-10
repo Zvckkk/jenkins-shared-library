@@ -91,7 +91,7 @@ private def update_agent() {
                 // automatically update nebula config
                 if(gauntEnv.update_nebula_config){
                     stage('Update Nebula Config') {
-                        gauntEnv.nebula_config_path = '/tmp/'+ env.JOB_NAME + '/'+ env.BUILD_NUMBER
+                        gauntEnv.nebula_config_path = '/tmp/'+ env.JOB_NAME.replaceAll("\\s", "_") + '/'+ env.BUILD_NUMBER.replaceAll("\\s", "_")
                         if(gauntEnv.nebula_config_source == 'github'){
                             dir(gauntEnv.nebula_config_path){
                                 run_i('git clone -b "' + gauntEnv.nebula_config_branch + '" ' + gauntEnv.nebula_config_repo, true)
