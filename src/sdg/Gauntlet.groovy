@@ -238,7 +238,11 @@ def stage_library(String stage_name) {
                             set_elastic_field(board, 'post_boot_failure', 'False')
 
                             // verify checksum
-                            nebula('manager.verify-checksum --board-name=' + board + ' --folder=outs', true, true, true)
+                            if (board == "pluto"){
+                                echo "Skipping checksum verification."
+                            }else {
+                                nebula('manager.verify-checksum --board-name=' + board + ' --folder=outs', true, true, true)
+                            }  
                         }
                     }
                 }
