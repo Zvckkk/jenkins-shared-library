@@ -319,34 +319,44 @@ def stage_library(String stage_name) {
                     echo "Recover stage does not support pluto yet!"
                 }else{
                     dir ('recovery'){
-                        if (gauntEnv.bootfile_source == "NA")
-                            throw new Exception("bootfile_source must be specified")
-                        try{
-                            echo "Fetching reference boot files"
-                            nebula('dl.bootfiles --board-name=' + board 
-                                + ' --source-root="' + gauntEnv.nebula_local_fs_source_root 
-                                + '" --source=' + gauntEnv.bootfile_source
-                                +  ' --branch="' + ref_branch.toString()
-                                +  '" --filetype="boot_partition"', true, true, true)
-                            echo "Extracting reference fsbl and u-boot"
-                            dir('outs'){
-                                sh("cp bootgen_sysfiles.tgz ..")
-                            }
-                            sh("tar -xzvf bootgen_sysfiles.tgz; cp u-boot*.elf u-boot.elf")
-                            echo "Executing board recovery..."
-                            nebula(nebula_cmd)
+                        // confirm if indeed the board is dead and needs recovery
+                        def to_proceed = false
+                        try
+                            nebula('net.check_board_booted --board-name=' + board)
+                            echo 'Board is booted, no need for recovery'
                         }catch(Exception ex){
-                            if(gauntEnv.netbox_allow_disable){
-                                def message = "Disabled by ${env.JOB_NAME} ${env.BUILD_NUMBER}"
-                                def disable_command = 'netbox.disable-board --board-name=' + board + ' --failure --reason=' + '"' + message + '"' + ' --power-off'
-                                nebula(disable_command)
+                            to_proceed = true
+                        }
+                        if(to_proceed){
+                            try{
+                                if (gauntEnv.bootfile_source == "NA")
+                                    throw new Exception("bootfile_source must be specified")
+                                echo "Fetching reference boot files"
+                                nebula('dl.bootfiles --board-name=' + board 
+                                    + ' --source-root="' + gauntEnv.nebula_local_fs_source_root 
+                                    + '" --source=' + gauntEnv.bootfile_source
+                                    +  ' --branch="' + ref_branch.toString()
+                                    +  '" --filetype="boot_partition"', true, true, true)
+                                echo "Extracting reference fsbl and u-boot"
+                                dir('outs'){
+                                    sh("cp bootgen_sysfiles.tgz ..")
+                                }
+                                sh("tar -xzvf bootgen_sysfiles.tgz; cp u-boot*.elf u-boot.elf")
+                                echo "Executing board recovery..."
+                                nebula(nebula_cmd)
+                            }catch(Exception ex){
+                                if(gauntEnv.netbox_allow_disable){
+                                    def message = "Disabled by ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+                                    def disable_command = 'netbox.disable-board --board-name=' + board + ' --failure --reason=' + '"' + message + '"' + ' --power-off'
+                                    nebula(disable_command)
+                                }
+                                echo getStackTrace(ex)
+                                throw ex
+                            }finally{
+                                //archive uart logs
+                                run_i("if [ -f ${board}.log ]; then mv ${board}.log uart_recover_" + board + ".log; fi")
+                                archiveArtifacts artifacts: 'uart_recover_*.log', followSymlinks: false, allowEmptyArchive: true
                             }
-                            echo getStackTrace(ex)
-                            throw ex
-                        }finally{
-                            //archive uart logs
-                            run_i("if [ -f ${board}.log ]; then mv ${board}.log uart_recover_" + board + ".log; fi")
-                            archiveArtifacts artifacts: 'uart_recover_*.log', followSymlinks: false, allowEmptyArchive: true
                         }
                     }
                 }
