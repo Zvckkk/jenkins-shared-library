@@ -321,7 +321,7 @@ def stage_library(String stage_name) {
                     dir ('recovery'){
                         // confirm if indeed the board is dead and needs recovery
                         def to_proceed = false
-                        try
+                        try{
                             nebula('net.check_board_booted --board-name=' + board)
                             echo 'Board is booted, no need for recovery'
                         }catch(Exception ex){
