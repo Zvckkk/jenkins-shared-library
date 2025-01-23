@@ -587,6 +587,7 @@ def stage_library(String stage_name) {
                             if ((statusCode != 5) && (statusCode != 0)){
                                 // Ignore error 5 which means no tests were run
                                 unstable("PyADITests Failed")
+                                gauntEnv.pytest_validation = true
                             }                
                         }
                     }
@@ -598,6 +599,82 @@ def stage_library(String stage_name) {
                 }
             }
             break
+
+    case 'RerunPytestFailures':
+        cls = { String board ->
+            stage('Rerun Python Test Failures') {
+                if (gauntEnv.pytest_validation){ 
+                    // Restart target before rerunning failures
+                    try{
+                        nebula('net.restart-board --board-name=' + board) 
+                    } catch(Exception ex){
+                        println("Failed to restart target.")
+                    }
+                    nebula('net.check-board-booted --board-name=' + board)
+                    println('Rerun pytest failures')
+                        dir('pyadi-iio') {
+                            try {
+                                board = board.replaceAll('_', '-')
+                                if (gauntEnv.iio_uri_source == "ip"){
+                                    ip = nebula('update-config network-config dutip --board-name='+board)
+                                    uri = "ip:" + ip;
+                                }else{
+                                    serial = nebula('update-config uart-config address --board-name='+board)
+                                    baudrate = nebula('update-config uart-config baudrate --board-name='+board)
+                                    uri = "serial:" + serial + "," + baudrate
+                                }
+                                check = check_for_marker(board)
+                                board = board.replaceAll('-', '_')
+                                board_name = check.board_name.replaceAll('-', '_')
+                                marker = check.marker
+                                cmd = "python3 -m pytest --last-failed --html=testhtml/_failures_report.html --junitxml=testxml/" + board + "_failures_reports.xml"
+                                cmd += " --adi-hw-map -v -k 'not stress and not prod' -s --uri="+uri+" -m " + board_name
+                                cmd += " --scan-verbose --capture=tee-sys" + marker
+                                def statusCode = sh script:cmd, returnStatus:true
+
+                                // generate html report
+                                if (fileExists('testhtml/_failures_report.html')){
+                                    publishHTML(target : [
+                                        escapeUnderscores: false, 
+                                        allowMissing: false, 
+                                        alwaysLinkToLastBuild: false, 
+                                        keepAll: true, 
+                                        reportDir: 'testhtml', 
+                                        reportFiles: 'report.html', 
+                                        reportName: board, 
+                                        reportTitles: board])
+                                }
+
+                                // get pytest results for logging
+                                xmlFile = 'testxml/' + board + 'failures_reports.xml'
+                                if(fileExists(xmlFile)){
+                                    try{
+                                        parseForLogging ('pytest', xmlFile, board)
+                                    }catch(Exception ex){
+                                        println('Parsing pytest results failed')
+                                        echo getStackTrace(ex)
+                                    }
+                                    pytest_attachment = board+"_reports.xml"
+                                }
+                                
+                                // throw exception if pytest failed
+                                if ((statusCode != 5) && (statusCode != 0)){
+                                    // Ignore error 5 which means no tests were run
+                                    unstable("PyADITests failed even after reboot and rerun.")
+                                }                
+                            } finally {
+                                archiveArtifacts artifacts: 'pyadi-iio/testxml/*.xml', followSymlinks: false, allowEmptyArchive: true
+                                junit testResults: 'pyadi-iio/testxml/*.xml', allowEmptyResults: true                    
+                            }
+                        }
+                } else{
+                    println("No failures for validation. Skipping stage.")
+                    Utils.markStageSkippedForConditional('Rerun Python Test Failures')
+                }      
+            }
+        }
+        break
+            
     case 'LibAD9361Tests':
             cls = { String board ->
                 def supported = false
