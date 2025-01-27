@@ -523,11 +523,14 @@ def stage_library(String stage_name) {
                         }
                         //scm pyadi-iio
                         dir('pyadi-iio'){
-                            def branch = isMultiBranchPipeline(gauntEnv.pyadi_iio_repo) ?: "${gauntEnv.pyadi_iio_branch}"
+                            def result = isMultiBranchPipeline(gauntEnv.pyadi_iio_repo)
+                            result.branch = !result.isMultiBranch ? gauntEnv.pyadi_iio_branch : result.branch
+                            cloneConfigs = [credentialsId: '', url: gauntEnv.pyadi_iio_repo]
+                            cloneConfigs['refspec'] = result.isMultiBranch ? result.ref : cloneConfigs['refspec']
                             checkout([
                                 $class : 'GitSCM',
-                                branches : [[name: branch]],
-                                userRemoteConfigs: [[credentialsId: '', url: "${gauntEnv.pyadi_iio_repo}"]]
+                                branches : [[name: result.branch]],
+                                userRemoteConfigs: [cloneConfigs]
                             ])
                         }
 
@@ -645,11 +648,14 @@ def stage_library(String stage_name) {
                 def description = ""
                 def xmlFile = board+'_HWTestResults.xml'
                 sh 'cp -r /root/.matlabro /root/.matlab'
-                def branch = isMultiBranchPipeline(gauntEnv.matlab_repo) ?: "${gauntEnv.matlab_branch}"
+                def result = isMultiBranchPipeline(gauntEnv.matlab_repo)
+                result.branch = !result.isMultiBranch ? gauntEnv.matlab_branch : result.branch
+                cloneConfigs = [credentialsId: '', url: gauntEnv.matlab_repo]
+                cloneConfigs['refspec'] = result.isMultiBranch ? result.ref : cloneConfigs['refspec']
                 checkout([
                     $class : 'GitSCM',
-                    branches : [[name: branch]],
-                    userRemoteConfigs: [[credentialsId: '', url: "${gauntEnv.matlab_repo}"]],
+                    branches : [[name: result.branch]],
+                    userRemoteConfigs: [cloneConfigs],
                     extensions: [
                         [$class: 'SubmoduleOption', recursiveSubmodules: true, trackingSubmodules: false]
                     ]
@@ -1363,22 +1369,33 @@ def set_update_nebula_config(boolean enable) {
  * Declaring the GitHub Project url in a non-multibranch pipeline does not conflict with checking.
  */
 def isMultiBranchPipeline(repo_url) {
+    isMultiBranch = false 
     println("Checking if multibranch pipeline..") 
     if (env.BRANCH_NAME){
         println("Pipeline is multibranch.")
         //check if the multibranch pipeline is for this repo
         def actualRepoUrl = scm.userRemoteConfigs[0].url
         if (actualRepoUrl == repo_url){
-            branch = "*/${env.BRANCH_NAME}"
+            branch = env.BRANCH_NAME
         }else{
             //repo is cloned only in another multibranch pipeline
             branch = ""
-        }            
+        }
+        if (branch.startsWith("PR-")) {
+            pr_number = branch.substring(3)
+            println "Branch is a pull request (PR number: ${pr_number})"
+            ref = "+refs/pull/${pr_number}/head:refs/remotes/origin/PR-${pr_number}"
+        } else {
+            println "Branch is not a pull request."
+            ref = "+refs/heads/${branch}:refs/remotes/origin/${branch}"
+        }
+        isMultiBranch = true            
     }else {
         println("Pipeline is not multibranch.")
         branch = ""
+        ref = ""
     }
-    return branch
+    return [isMultiBranch: isMultiBranch, branch: branch, ref: ref]
 }
 
 /**
