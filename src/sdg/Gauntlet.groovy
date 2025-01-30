@@ -585,7 +585,7 @@ def stage_library(String stage_name) {
                             if ((statusCode != 5) && (statusCode != 0)){
                                 // Ignore error 5 which means no tests were run
                                 unstable("PyADITests Failed")
-                                gauntEnv.pytest_validation = true
+                                // gauntEnv.pytest_validation = true
                             }                
                         }
                     }
@@ -601,7 +601,7 @@ def stage_library(String stage_name) {
     case 'RerunPytestFailures':
         cls = { String board ->
             stage('Rerun Python Test Failures') {
-                if (gauntEnv.pytest_validation){ 
+                // if (gauntEnv.pytest_validation){ 
                     // Restart target before rerunning failures
                     try{
                         nebula('net.restart-board --board-name=' + board) 
@@ -664,10 +664,10 @@ def stage_library(String stage_name) {
                                 junit testResults: 'testxml/*.xml', allowEmptyResults: true                    
                             }
                         }
-                } else{
-                    println("No failures for validation. Skipping stage.")
-                    Utils.markStageSkippedForConditional('Rerun Python Test Failures')
-                }      
+                // } else{
+                //     println("No failures for validation. Skipping stage.")
+                //     Utils.markStageSkippedForConditional('Rerun Python Test Failures')
+                // }      
             }
         }
         break

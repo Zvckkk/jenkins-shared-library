@@ -96,7 +96,6 @@ private def call(hdlBranch, linuxBranch, bootPartitionBranch,firmwareVersion, bo
             internal_stages_to_skip: [:], // Number of stages to skip. Used for test skipping for MATLAB
             update_lib_requirements: false, // Set to true to run installation of requirements.txt of nebula and telemetry
             update_container_lib: false, // Set to true to force update libiio, nebula, telemetry base on master branch inside docker container
-            nebula_config_path: '',
-            pytest_validation: false
+            nebula_config_path: ''
     ]
 }
