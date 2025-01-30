@@ -640,13 +640,13 @@ def stage_library(String stage_name) {
                                         alwaysLinkToLastBuild: false, 
                                         keepAll: true, 
                                         reportDir: 'testhtml', 
-                                        reportFiles: 'report.html', 
+                                        reportFiles: '_failures_report.html', 
                                         reportName: board, 
                                         reportTitles: board])
                                 }
 
                                 // get pytest results for logging
-                                xmlFile = 'testxml/' + board + 'failures_reports.xml'
+                                xmlFile = 'testxml/' + board + '_failures_reports.xml'
                                 if(fileExists(xmlFile)){
                                     try{
                                         parseForLogging ('pytest', xmlFile, board)
@@ -654,7 +654,7 @@ def stage_library(String stage_name) {
                                         println('Parsing pytest results failed')
                                         echo getStackTrace(ex)
                                     }
-                                    pytest_attachment = board+"_reports.xml"
+                                    pytest_attachment = board+"_failures_reports.xml"
                                 }
                                 
                                 // throw exception if pytest failed
@@ -663,8 +663,8 @@ def stage_library(String stage_name) {
                                     unstable("PyADITests failed even after reboot and rerun.")
                                 }                
                             } finally {
-                                archiveArtifacts artifacts: 'pyadi-iio/testxml/*.xml', followSymlinks: false, allowEmptyArchive: true
-                                junit testResults: 'pyadi-iio/testxml/*.xml', allowEmptyResults: true                    
+                                archiveArtifacts artifacts: '/testxml/*.xml', followSymlinks: false, allowEmptyArchive: true
+                                junit testResults: '/testxml/*.xml', allowEmptyResults: true                    
                             }
                         }
                 } else{
