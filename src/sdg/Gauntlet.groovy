@@ -660,8 +660,8 @@ def stage_library(String stage_name) {
                                     unstable("PyADITests failed even after reboot and rerun.")
                                 }                
                             } finally {
-                                archiveArtifacts artifacts: '/testxml/*.xml', followSymlinks: false, allowEmptyArchive: true
-                                junit testResults: '/testxml/*.xml', allowEmptyResults: true                    
+                                archiveArtifacts artifacts: 'testxml/*.xml', followSymlinks: false, allowEmptyArchive: true
+                                junit testResults: 'testxml/*.xml', allowEmptyResults: true                    
                             }
                         }
                 } else{
