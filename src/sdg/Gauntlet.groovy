@@ -1369,7 +1369,9 @@ def set_update_nebula_config(boolean enable) {
  * Declaring the GitHub Project url in a non-multibranch pipeline does not conflict with checking.
  */
 def isMultiBranchPipeline(repo_url) {
-    isMultiBranch = false 
+    isMultiBranch = false
+    branch = ""
+    ref = ""
     println("Checking if multibranch pipeline..") 
     if (env.BRANCH_NAME){
         println("Pipeline is multibranch.")
@@ -1377,23 +1379,21 @@ def isMultiBranchPipeline(repo_url) {
         def actualRepoUrl = scm.userRemoteConfigs[0].url
         if (actualRepoUrl == repo_url){
             branch = env.BRANCH_NAME
+            if (branch.startsWith("PR-")) {
+                pr_number = branch.substring(3)
+                println "Branch is a pull request (PR number: ${pr_number})"
+                ref = "+refs/pull/${pr_number}/head:refs/remotes/origin/PR-${pr_number}"
+            } else {
+                println "Branch is not a pull request."
+                ref = "+refs/heads/${branch}:refs/remotes/origin/${branch}"
+            }
+            isMultiBranch = true  
         }else{
             //repo is cloned only in another multibranch pipeline
-            branch = ""
+            println("Pipeline is not CI for current repo.")
         }
-        if (branch.startsWith("PR-")) {
-            pr_number = branch.substring(3)
-            println "Branch is a pull request (PR number: ${pr_number})"
-            ref = "+refs/pull/${pr_number}/head:refs/remotes/origin/PR-${pr_number}"
-        } else {
-            println "Branch is not a pull request."
-            ref = "+refs/heads/${branch}:refs/remotes/origin/${branch}"
-        }
-        isMultiBranch = true            
     }else {
         println("Pipeline is not multibranch.")
-        branch = ""
-        ref = ""
     }
     return [isMultiBranch: isMultiBranch, branch: branch, ref: ref]
 }
