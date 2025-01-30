@@ -603,12 +603,12 @@ def stage_library(String stage_name) {
     case 'RerunPytestFailures':
         cls = { String board ->
             stage('Rerun Python Test Failures') {
-                try{
-                    nebula('net.restart-board --board-name=' + board) 
-                } catch(Exception ex){
-                    println("Failed to restart target.")
-                }
-                nebula('net.check-board-booted --board-name=' + board)
+                // try{
+                //     nebula('net.restart-board --board-name=' + board) 
+                // } catch(Exception ex){
+                //     println("Failed to restart target.")
+                // }
+                // nebula('net.check-board-booted --board-name=' + board)
                 dir('pyadi-iio') {
                     try {
                         board = board.replaceAll('_', '-')
