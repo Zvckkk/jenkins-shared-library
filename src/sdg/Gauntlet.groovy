@@ -498,7 +498,6 @@ def stage_library(String stage_name) {
                         def baudrate;
                         def uri;
                         def description = ""
-                        def pytest_attachment = null
                         println('IP: ' + ip)
                         // temporarily get pytest-libiio from another source
                         run_i('git clone -b "' + gauntEnv.pytest_libiio_branch + '" ' + gauntEnv.pytest_libiio_repo, true)
@@ -580,7 +579,6 @@ def stage_library(String stage_name) {
                                     println('Parsing pytest results failed')
                                     echo getStackTrace(ex)
                                 }
-                                pytest_attachment = board+"_reports.xml"
                             }
                             
                             // throw exception if pytest failed
@@ -654,7 +652,6 @@ def stage_library(String stage_name) {
                                         println('Parsing pytest results failed')
                                         echo getStackTrace(ex)
                                     }
-                                    pytest_attachment = board+"_failures_reports.xml"
                                 }
                                 
                                 // throw exception if pytest failed
