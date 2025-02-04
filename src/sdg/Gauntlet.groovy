@@ -584,14 +584,14 @@ def stage_library(String stage_name) {
                             // throw exception if pytest failed
                             if ((statusCode != 5) && (statusCode != 0)){
                                 // Ignore error 5 which means no tests were run
-                                throw new Exception('Pytest failures require validation.')
+                                throw new Exception('Pytest failed on first run.')
                                 
                             }                
                         }
                     }catch(Exception ex) {
-                        currentBuild.result = 'UNSTABLE'
-                        unstable("PyADITests Failed")
-                        throw new Exception('Pytest failures require validation.')
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            throw new Exception('Pytest failures require validation.')
+                        }
                     }
                     finally {
                         archiveArtifacts artifacts: 'pyadi-iio/testxml/*.xml', followSymlinks: false, allowEmptyArchive: true
