@@ -584,12 +584,14 @@ def stage_library(String stage_name) {
                             // throw exception if pytest failed
                             if ((statusCode != 5) && (statusCode != 0)){
                                 // Ignore error 5 which means no tests were run
-                                throw new NominalException('Pytest failures.')
                                 unstable("PyADITests Failed")
-
-                                // gauntEnv.pytest_validation = true
+                                throw new Exception('Pytest failures require validation.')
+                                
                             }                
                         }
+                    }
+                    }catch(Exception ex){
+                        throw new Exception('Pytest failures require validation.') 
                     }
                     finally
                     {
