@@ -490,6 +490,7 @@ def stage_library(String stage_name) {
     case 'PyADITests':
             cls = { String board ->
                 stage('Run Python Tests') {
+                    def statusCode;
                     try
                     {
                         //def ip = nebula('uart.get-ip')
@@ -498,7 +499,6 @@ def stage_library(String stage_name) {
                         def baudrate;
                         def uri;
                         def description = ""
-                        def statusCode;
                         println('IP: ' + ip)
                         // temporarily get pytest-libiio from another source
                         run_i('git clone -b "' + gauntEnv.pytest_libiio_branch + '" ' + gauntEnv.pytest_libiio_repo, true)
@@ -556,7 +556,7 @@ def stage_library(String stage_name) {
                             cmd = "python3 -m pytest --html=testhtml/report.html --junitxml=testxml/" + board + "_reports.xml"
                             cmd += " --adi-hw-map -v -k 'not stress and not prod' -s --uri="+uri+" -m " + board_name
                             cmd += " --scan-verbose --capture=tee-sys" + marker
-                            def statusCode = sh script:cmd, returnStatus:true
+                            statusCode = sh script:cmd, returnStatus:true
 
                             // generate html report
                             if (fileExists('testhtml/report.html')){
