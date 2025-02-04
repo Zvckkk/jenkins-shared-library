@@ -589,9 +589,7 @@ def stage_library(String stage_name) {
                             }                
                         }
                     }catch(Exception ex) {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            throw new Exception('Pytest failures require validation.')
-                        }
+                        throw new Exception('Pytest failures require validation.')
                     }
                     finally {
                         archiveArtifacts artifacts: 'pyadi-iio/testxml/*.xml', followSymlinks: false, allowEmptyArchive: true
@@ -658,6 +656,7 @@ def stage_library(String stage_name) {
                         if ((statusCode != 5) && (statusCode != 0)){
                             // Ignore error 5 which means no tests were run
                             unstable("PyADITests failed even after reboot and rerun.")
+                            currentBuild.result = 'UNSTABLE'
                         }                
                     } finally {
                         archiveArtifacts artifacts: 'testxml/*.xml', followSymlinks: false, allowEmptyArchive: true
