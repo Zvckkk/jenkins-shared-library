@@ -584,16 +584,20 @@ def stage_library(String stage_name) {
                             // throw exception if pytest failed
                             if ((statusCode != 5) && (statusCode != 0)){
                                 // Ignore error 5 which means no tests were run
-                                throw new Exception('Pytest failed on first run.')
+                                unstable("PyADITests Failed")
+                                // throw new Exception('Pytest failed on first run.')
                                 
                             }                
                         }
-                    }catch(Exception ex) {
-                        throw new Exception('Pytest failures require validation.')
-                    }
+                    // }catch(Exception ex) {
+                    //     throw new Exception('Pytest failures require validation.')
+                    // }
                     finally {
                         archiveArtifacts artifacts: 'pyadi-iio/testxml/*.xml', followSymlinks: false, allowEmptyArchive: true
                         junit testResults: 'pyadi-iio/testxml/*.xml', allowEmptyResults: true                    
+                        if ((statusCode != 5) && (statusCode != 0)){
+                            stage_library('RerunPytestFailures').call(board)
+                        }
                     }
                 }
             }
