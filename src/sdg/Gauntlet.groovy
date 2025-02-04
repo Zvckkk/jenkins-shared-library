@@ -589,10 +589,10 @@ def stage_library(String stage_name) {
                                 
                             }                
                         }
+                    
                     // }catch(Exception ex) {
                     //     throw new Exception('Pytest failures require validation.')
-                    // }
-                    finally {
+                    } finally {
                         archiveArtifacts artifacts: 'pyadi-iio/testxml/*.xml', followSymlinks: false, allowEmptyArchive: true
                         junit testResults: 'pyadi-iio/testxml/*.xml', allowEmptyResults: true                    
                         if ((statusCode != 5) && (statusCode != 0)){
