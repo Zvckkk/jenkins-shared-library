@@ -498,6 +498,7 @@ def stage_library(String stage_name) {
                         def baudrate;
                         def uri;
                         def description = ""
+                        def statusCode;
                         println('IP: ' + ip)
                         // temporarily get pytest-libiio from another source
                         run_i('git clone -b "' + gauntEnv.pytest_libiio_branch + '" ' + gauntEnv.pytest_libiio_repo, true)
