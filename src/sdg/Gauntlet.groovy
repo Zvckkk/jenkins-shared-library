@@ -608,6 +608,7 @@ def stage_library(String stage_name) {
         cls = { String board ->
             stage('Rerun Python Test Failures') {
                 try{
+                    board = board.replaceAll('_', '-')
                     nebula('net.restart-board --board-name=' + board) 
                 } catch(Exception ex){
                     println("Failed to restart target.")
@@ -615,7 +616,6 @@ def stage_library(String stage_name) {
                 nebula('net.check-board-booted --board-name=' + board)
                 dir('pyadi-iio') {
                     try {
-                        board = board.replaceAll('_', '-')
                         if (gauntEnv.iio_uri_source == "ip"){
                             ip = nebula('update-config network-config dutip --board-name='+board)
                             uri = "ip:" + ip;
