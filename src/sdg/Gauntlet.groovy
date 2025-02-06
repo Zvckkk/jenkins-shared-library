@@ -571,8 +571,8 @@ def stage_library(String stage_name) {
                                     // }
                                     cmd = "python3 -m pytest --last-failed --html=testhtml/failures_report.html --junitxml=testxml/" + board + "failures_reports.xml"
                                     cmd += " --uri="+uri+" --scan-verbose --capture=tee-sys"
-                                    def statusCodeRerun = sh script:cmd, returnStatus:true
-                                    if ((statusCodeRerun != 5) && (statusCodeRerun != 0)){
+                                    statusCode = sh script:cmd, returnStatus:true
+                                    if ((statusCode != 5) && (statusCode != 0)){
                                         unstable("PyADITests failed even after reboot.")
                                     }
                                 } else {
