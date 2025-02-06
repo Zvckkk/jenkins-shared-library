@@ -557,6 +557,28 @@ def stage_library(String stage_name) {
                             cmd += " --adi-hw-map -v -k 'not stress and not prod' -s --uri="+uri+" -m " + board_name
                             cmd += " --scan-verbose --capture=tee-sys" + marker
                             def statusCode = sh script:cmd, returnStatus:true
+                    
+                            // mark stage as unstable if pytest failed
+                            if ((statusCode != 5) && (statusCode != 0)){
+                                // Ignore error 5 which means no tests were run
+                                
+                                if (gauntEnv.validate_pytest){
+                                    try{
+                                        board = board.replaceAll('_', '-')
+                                        nebula('net.restart-board --board-name=' + board.replaceAll('_', '-')) 
+                                    } catch(Exception ex){
+                                        println("Failed to restart target.")
+                                    }
+                                    cmd = "python3 -m pytest --html=testhtml/failures_report.html --junitxml=testxml/" + board + "failures_reports.xml"
+                                    cmd += " --uri="+uri+" --scan-verbose --capture=tee-sys"
+                                    def statusCodeRerun = sh script:cmd, returnStatus:true
+                                    if ((statusCodeRerun != 5) && (statusCodeRerun != 0)){
+                                        unstable("PyADITests failed even after reboot.")
+                                    }
+                                } else {
+                                    unstable("PyADITests failed. Validation flag is set to false. Skipping reboot and rerun.")
+                                }
+                            }                
 
                             // generate html report
                             if (fileExists('testhtml/report.html')){
@@ -582,12 +604,6 @@ def stage_library(String stage_name) {
                                 }
                                 pytest_attachment = board+"_reports.xml"
                             }
-                            
-                            // throw exception if pytest failed
-                            if ((statusCode != 5) && (statusCode != 0)){
-                                // Ignore error 5 which means no tests were run
-                                unstable("PyADITests Failed")
-                            }                
                         }
                     }
                     finally
