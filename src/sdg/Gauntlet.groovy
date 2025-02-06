@@ -665,7 +665,7 @@ def stage_library(String stage_name) {
                         }                
                     } finally {
                         archiveArtifacts artifacts: 'testxml/*.xml', followSymlinks: false, allowEmptyArchive: true
-                        junit testResults: 'testxml/*.xml', allowEmptyResults: true                    
+                        junit testResults: 'testxml/*_failures_report.xml', allowEmptyResults: true                    
                     }
                 }    
             }
