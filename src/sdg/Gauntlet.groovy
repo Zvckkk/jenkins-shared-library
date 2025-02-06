@@ -569,7 +569,7 @@ def stage_library(String stage_name) {
                                     // } catch(Exception ex){
                                     //     println("Failed to restart target.")
                                     // }
-                                    cmd = "python3 -m pytest --last-failed --html=testhtml/failures_report.html --junitxml=testxml/" + board + "failures_reports.xml"
+                                    cmd = "python3 -m pytest --last-failed --html=testhtml/failures_report.html --junitxml=testxml/" + board + "_failures_reports.xml"
                                     cmd += " --uri="+uri+" --scan-verbose --capture=tee-sys"
                                     statusCode = sh script:cmd, returnStatus:true
                                     if ((statusCode != 5) && (statusCode != 0)){
