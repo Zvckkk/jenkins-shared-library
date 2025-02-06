@@ -563,12 +563,12 @@ def stage_library(String stage_name) {
                                 // Ignore error 5 which means no tests were run
                                 
                                 if (gauntEnv.validate_pytest){
-                                    try{
-                                        board = board.replaceAll('_', '-')
-                                        nebula('net.restart-board --board-name=' + board.replaceAll('_', '-')) 
-                                    } catch(Exception ex){
-                                        println("Failed to restart target.")
-                                    }
+                                    // try{
+                                    //     board = board.replaceAll('_', '-')
+                                    //     nebula('net.restart-board --board-name=' + board.replaceAll('_', '-')) 
+                                    // } catch(Exception ex){
+                                    //     println("Failed to restart target.")
+                                    // }
                                     cmd = "python3 -m pytest --last-failed --html=testhtml/failures_report.html --junitxml=testxml/" + board + "failures_reports.xml"
                                     cmd += " --uri="+uri+" --scan-verbose --capture=tee-sys"
                                     def statusCodeRerun = sh script:cmd, returnStatus:true
