@@ -554,7 +554,8 @@ def stage_library(String stage_name) {
                             board = board.replaceAll('-', '_')
                             board_name = check.board_name.replaceAll('-', '_')
                             marker = check.marker
-                            cmd = "python3 -m pytest --reruns 2 --html=testhtml/report.html --junitxml=testxml/" + board + "_reports.xml"
+                            xmlFile = 'testxml/' + board + '_reports.xml'
+                            cmd = "python3 -m pytest --reruns 2 --html=testhtml/report.html --junitxml=" + xmlFile
                             cmd += " --adi-hw-map -v -k 'not stress and not prod' -s --uri="+uri+" -m " + board_name
                             cmd += " --scan-verbose --capture=tee-sys" + marker
                             def statusCode = sh script:cmd, returnStatus:true
@@ -595,7 +596,6 @@ def stage_library(String stage_name) {
                             }
 
                             // get pytest results for logging
-                            xmlFile = 'testxml/' + board + '_reports.xml'
                             if(fileExists(xmlFile)){
                                 try{
                                     parseForLogging ('pytest', xmlFile, board)
