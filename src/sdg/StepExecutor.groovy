@@ -93,4 +93,19 @@ class StepExecutor implements IStepExecutor{
     String readFile(String file) {
         return this._steps.readFile(file)
     }
+
+    @Override
+    void writeFile(Map kwargs = [:]) {
+        this._steps.writeFile(kwargs)
+    }
+
+    @Override
+    void dir(String dir, Closure cls) {
+        this._steps.dir(dir, cls)
+    }
+
+    @Override
+    void unstable(String message) {
+        this._steps.unstable(message)
+    }
 }
