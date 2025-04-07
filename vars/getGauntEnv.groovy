@@ -29,7 +29,7 @@ private def call(hdlBranch, linuxBranch, bootPartitionBranch,firmwareVersion, bo
             include_variants: false,
             firmware_boards: ['pluto','m2k'],
             enable_docker: false,
-            docker_image: 'tfcollins/test-harness-ci:latest',
+            docker_image: 'tfcollins/test-harness-ci-ubuntu-22_04:latest',
             docker_args: ['MATLAB','Vivado'],
             docker_host_mode: true,
             update_nebula_config: true,
