@@ -82,13 +82,14 @@ private def call(hdlBranch, linuxBranch, bootPartitionBranch,firmwareVersion, bo
             nebula_config_branch: 'master',
             kuiper_checker_repo: 'https://github.com/sdgtt/kuiper-post-build-checker.git',
             kuiper_checker_branch: 'master',
-            send_results: false,
+            send_results: false, // set to true to send results
             test_adi_diagnostics: false, // set to true to run diagnostics on the net before running the gauntlet
-            elastic_logs : [:],
+            elastic_logs : [:], 
             max_retry: 3,
             recovery_ref: "SD",
             log_artifacts: false,
             credentials_id: '',
+            cloudsmith_credentials_id: '',
             toolbox_generated_bootbin: false,
             ml_toolbox: '',
             ml_branch: '',
