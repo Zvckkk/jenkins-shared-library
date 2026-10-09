@@ -90,6 +90,9 @@ class UpdateBOOTFiles implements IStage {
                                 cmd += ' --cloudsmith-auth=${CLOUDSMITH_AUTH}'
                                 cmd += ' --cloudsmith-repo=' + gauntEnv.cloudsmith_repo
                                 cmd += ' --cloudsmith-marker=' + gauntEnv.cloudsmith_marker
+                                if (gauntEnv.cloudsmith_version_path != 'NA') {
+                                    cmd += ' --version=' + gauntEnv.cloudsmith_version_path
+                                }
                                 gauntlet.nebula(cmd, true, true, true)
                             }
                         } else {

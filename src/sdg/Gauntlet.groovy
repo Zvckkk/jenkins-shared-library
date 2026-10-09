@@ -1445,6 +1445,13 @@ def set_cloudsmith_marker(cloudsmith_marker) {
 }
 
 /**
+ * Set the cloudsmith_version_path variable of gauntEnv used in specifying the version path in the Cloudsmith repository by nebula dl.bootfiles
+ * @param cloudsmith_version_path cloudsmith version string (e.g. "test_boot_files/main/HDL_latest_commit/<PR_ID>/<Timestamp>", "test_boot_files/main/Linux_latest_commit/<PR_ID>/<Timestamp>")
+ */
+def set_cloudsmith_version_path(cloudsmith_version_path) {
+    gauntEnv.cloudsmith_version_path = cloudsmith_version_path
+}
+/**
  * Set list of MATLAB commands
  * @param matlab_commands list of strings of commands to be executed in MATLAB
  * For example: "runHWTests('AD9361')"

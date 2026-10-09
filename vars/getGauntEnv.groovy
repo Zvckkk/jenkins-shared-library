@@ -93,6 +93,7 @@ private def call(hdlBranch, linuxBranch, bootPartitionBranch,firmwareVersion, bo
             cloudsmith_auth_id: '',
             cloudsmith_repo: '',
             cloudsmith_marker: '',
+            cloudsmith_version_path: 'NA',
             toolbox_generated_bootbin: false,
             ml_toolbox: '',
             ml_branch: '',
