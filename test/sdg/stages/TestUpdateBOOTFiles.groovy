@@ -151,13 +151,18 @@ class TestUpdateBOOTFiles extends Specification {
         gauntlet.set_env("docker_args", [])
         gauntlet.set_env("debug_level", 3)
         gauntlet.set_env("cloudsmith_auth_id", "cloudsmith-svc-cred")
+        gauntlet.set_env("cloudsmith_repo", "sdg-boot-partition")
+        gauntlet.set_env("cloudsmith_marker", "make_parameters.txt")
 
         def dl_cmd = 'dl.bootfiles --board-name=' + board +
                  ' --source-root=/var/lib/tftpboot' +
                  ' --source=cloudsmith' +
                  ' --branch=2026_r1' +
                  ' --filetype="boot_partition"' +
-                 ' --cloudsmith-auth=${CLOUDSMITH_AUTH}'
+                 ' --cloudsmith-auth=${CLOUDSMITH_AUTH}' +
+                 ' --cloudsmith-repo=' + gauntlet.get_env("cloudsmith_repo") +
+                 ' --cloudsmith-marker=' + gauntlet.get_env("cloudsmith_marker")
+
 
         when:
         ubf_stage.stageSteps(gauntlet, board, ml_bootbin_case)

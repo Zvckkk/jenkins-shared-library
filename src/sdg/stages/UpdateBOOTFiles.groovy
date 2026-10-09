@@ -88,6 +88,8 @@ class UpdateBOOTFiles implements IStage {
                                 gauntlet.stepExecutor.string(credentialsId: gauntEnv.cloudsmith_auth_id, variable: 'CLOUDSMITH_AUTH')
                             ]) {
                                 cmd += ' --cloudsmith-auth=${CLOUDSMITH_AUTH}'
+                                cmd += ' --cloudsmith-repo=' + gauntEnv.cloudsmith_repo
+                                cmd += ' --cloudsmith-marker=' + gauntEnv.cloudsmith_marker
                                 gauntlet.nebula(cmd, true, true, true)
                             }
                         } else {

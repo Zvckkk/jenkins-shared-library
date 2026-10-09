@@ -346,6 +346,38 @@ Sample usage:
     harness = getGauntlet()
     harness.set_nebula_local_fs_source_root("artifactory.analog.com")
 
+set_cloudsmith_repo
+^^^^^^^^^^^^^^^^^^^
+
+Set the Cloudsmith repository slug used by ``nebula dl.bootfiles`` when ``bootfile_source`` is ``'cloudsmith'``.
+Nebula does not infer this value, so it is required for Cloudsmith ``boot_partition`` and ``rpi`` downloads.
+
+parameter:
+    * *cloudsmith_repo* - String Cloudsmith repo slug. Options: 'sdg-boot-partition', 'sdg-linux-rpi', 'sdg-test-boot-files'. Default: ''
+
+Sample usage:
+
+.. code-block:: groovy
+
+    harness = getGauntlet()
+    harness.set_cloudsmith_repo("sdg-test-boot-files")
+
+set_cloudsmith_marker
+^^^^^^^^^^^^^^^^^^^^^
+
+Set the Cloudsmith marker file that ``nebula dl.bootfiles`` queries to enumerate builds when ``bootfile_source`` is ``'cloudsmith'``.
+Nebula does not infer this value, so it is required for Cloudsmith ``boot_partition`` and ``rpi`` downloads.
+
+parameter:
+    * *cloudsmith_marker* - String marker file name. Options: 'make_parameters.txt', 'rpi_archives_properties.txt'. Default: ''
+
+Sample usage:
+
+.. code-block:: groovy
+
+    harness = getGauntlet()
+    harness.set_cloudsmith_marker("make_parameters.txt")
+
 Results
 -------
 

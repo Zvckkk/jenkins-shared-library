@@ -224,6 +224,8 @@ class TestRecoverBoard extends Specification {
         gauntlet.set_env("docker_args", [])
         gauntlet.set_env("debug_level", 3)
         gauntlet.set_env("cloudsmith_auth_id", "cloudsmith-svc-cred")
+        gauntlet.set_env("cloudsmith_repo", "sdg-boot-partition")
+        gauntlet.set_env("cloudsmith_marker", "make_parameters.txt")
 
         // trigger board-not-booted exception so recovery proceeds
         steps.sh([
@@ -236,7 +238,9 @@ class TestRecoverBoard extends Specification {
             ' --source=cloudsmith' +
             ' --branch="release"' +
             ' --filetype="boot_partition"' +
-            ' --cloudsmith-auth=${CLOUDSMITH_AUTH}'
+            ' --cloudsmith-auth=${CLOUDSMITH_AUTH}' +
+            ' --cloudsmith-repo=' + gauntlet.get_env("cloudsmith_repo") +
+            ' --cloudsmith-marker=' + gauntlet.get_env("cloudsmith_marker")
 
         when:
         _stage.stageSteps(gauntlet, board)

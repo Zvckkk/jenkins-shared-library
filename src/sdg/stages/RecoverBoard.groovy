@@ -91,6 +91,8 @@ class RecoverBoard implements IStage {
                             gauntlet.stepExecutor.string(credentialsId: gauntEnv.cloudsmith_auth_id, variable: 'CLOUDSMITH_AUTH')
                         ]) {
                             dlCmd += ' --cloudsmith-auth=${CLOUDSMITH_AUTH}'
+                            dlCmd += ' --cloudsmith-repo=' + gauntEnv.cloudsmith_repo
+                            dlCmd += ' --cloudsmith-marker=' + gauntEnv.cloudsmith_marker
                             gauntlet.nebula(dlCmd, true, true, true)
                         }
                     } else {

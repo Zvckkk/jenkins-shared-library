@@ -256,6 +256,8 @@ def old_stage_library(String stage_name) {
                                             stepExecutor.string(credentialsId: gauntEnv.cloudsmith_auth_id, variable: 'CLOUDSMITH_AUTH')
                                         ]) {
                                             cmd += ' --cloudsmith-auth=${CLOUDSMITH_AUTH}'
+                                            cmd += ' --cloudsmith-repo=' + gauntEnv.cloudsmith_repo
+                                            cmd += ' --cloudsmith-marker=' + gauntEnv.cloudsmith_marker
                                             nebula(cmd, true, true, true)
                                         }
                                     } else {
@@ -415,6 +417,8 @@ def old_stage_library(String stage_name) {
                                         stepExecutor.string(credentialsId: gauntEnv.cloudsmith_auth_id, variable: 'CLOUDSMITH_AUTH')
                                     ]) {
                                         dlCmd += ' --cloudsmith-auth=${CLOUDSMITH_AUTH}'
+                                        dlCmd += ' --cloudsmith-repo=' + gauntEnv.cloudsmith_repo
+                                        dlCmd += ' --cloudsmith-marker=' + gauntEnv.cloudsmith_marker
                                         nebula(dlCmd, true, true, true)
                                     }
                                 } else {
@@ -1421,6 +1425,23 @@ def set_job_trigger(trigger) {
  */
 def set_credentials_id(credentials_id) {
     gauntEnv.credentials_id = credentials_id
+}
+
+/**
+ * Set the cloudsmith_repo variable of gauntEnv used in specifying the Cloudsmith repository by nebula dl.bootfiles
+ * @param cloudsmith_repo Cloudsmith repo slug (e.g "sdg-boot-partition", "sdg-linux-rpi", "sdg-test-boot-files")
+ */
+
+def set_cloudsmith_repo(cloudsmith_repo) {
+    gauntEnv.cloudsmith_repo = cloudsmith_repo
+ }
+
+ /**
+  * Set the cloudsmith_marker variable of gauntEnv used as a Marker file in nebula initial queries to enumerate builds in nebula dl.bootfiles
+  * @param cloudsmith_marker Cloudsmith marker (e.g. "make_parameter.txt", "rpi_archives_properties.txt")
+  */
+def set_cloudsmith_marker(cloudsmith_marker) {
+    gauntEnv.cloudsmith_marker = cloudsmith_marker
 }
 
 /**
