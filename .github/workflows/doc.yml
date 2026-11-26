@@ -60,7 +60,11 @@ jobs:
           cd doc
           make coverage
           cat build/coverage/python.txt
-          cat build/coverage/python.txt | wc -l | xargs -I % test % -eq 2
+          # Fail if any Python objects are undocumented. Parse the "Undocumented"
+          # column of the TOTAL row rather than asserting a fixed line count, which
+          # breaks across Sphinx versions (newer Sphinx always emits a stats table).
+          undocumented=$(awk -F'|' '/^\| TOTAL/ {gsub(/ /, "", $4); print $4}' build/coverage/python.txt)
+          test "${undocumented:-1}" -eq 0
           cd ..
 
       # To add when the doc links are fixed
