@@ -50,6 +50,7 @@ class LinuxTests implements IStage {
         def failed_test = ''
         def devs = []
         def missing_devs = []
+        def systemd_checked = gauntEnv.check_systemd && !gauntEnv.firmware_boards.contains(board)
         try {
             // run_i('pip3 install pylibiio',true)
             //def ip = nebula('uart.get-ip')
@@ -74,6 +75,23 @@ class LinuxTests implements IStage {
                 gauntlet.nebula("net.check-dmesg --ip='"+ip+"' --board-name="+board)
             }catch(Exception ex) {
                 failed_test = failed_test + "[dmesg check failed: ${ex.getMessage()}]"
+            }
+            
+            if (systemd_checked) {
+                try{
+                    gauntlet.nebula("net.check-systemd --ip='"+ip+"' --board-name="+board, true, true, true)
+                }catch(Exception ex) {
+                    def failed_units = []
+                    if (steps.fileExists('systemd_failed.log')) {
+                        for (line in steps.readFile('systemd_failed.log').readLines()) {
+                            if (line.trim()) {
+                                failed_units << line.trim().split(/\s+/)[0]
+                            }
+                        }
+                    }
+                    def reason = failed_units ? failed_units.join(', ') : ex.getMessage()
+                    failed_test = failed_test + "[systemd check failed: ${reason}]"
+                }
             }
             
             if (gauntEnv.test_adi_diagnostics) {
@@ -101,6 +119,14 @@ class LinuxTests implements IStage {
             // count dmesg errs and warns
             gauntlet.set_elastic_field(board, 'dmesg_errs', steps.sh(returnStdout: true, script: 'cat dmesg_err_filtered.log | wc -l').trim())
             gauntlet.set_elastic_field(board, 'dmesg_warns', steps.sh(returnStdout: true, script: 'cat dmesg_warn.log | wc -l').trim())
+            // count failed and inactive systemd services, then rename logs
+            if (systemd_checked) {
+                gauntlet.set_elastic_field(board, 'systemd_failed', steps.sh(returnStdout: true, script: 'cat systemd_failed.log | wc -l').trim())
+                gauntlet.set_elastic_field(board, 'systemd_inactive', steps.sh(returnStdout: true, script: 'cat systemd_inactive.log | wc -l').trim())
+                for (kind in ['services', 'failed', 'inactive', 'enabled']) {
+                    gauntlet.run_i("if [ -f systemd_" + kind + ".log ]; then mv systemd_" + kind + ".log systemd_" + board + "_" + kind + ".log; fi")
+                }
+            }
             // Rename logs
             gauntlet.run_i("if [ -f dmesg.log ]; then mv dmesg.log dmesg_" + board + ".log; fi")
             gauntlet.run_i("if [ -f dmesg_err_filtered.log ]; then mv dmesg_err_filtered.log dmesg_" + board + "_err.log; fi")

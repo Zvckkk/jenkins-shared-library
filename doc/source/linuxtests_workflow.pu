@@ -42,7 +42,18 @@ partition "Try Block" {
   
   :Get drivers enumerated;
   note right: nebula('update-config driver-config iio_device_names -b '+board, false, true, false)
-  
+
+  partition "Systemd Check" {
+    if (check_systemd and not firmware board?) then (yes)
+      :Check systemd services;
+      note right: nebula("net.check-systemd - - ip='"+ip+"' - - board-name="+board, true, true, true)
+      if (Failed services found?) then (yes)
+        :Add failure to failed_test;
+        note right: failed_test = failed_test + "[systemd check failed: <failed units>]"
+      endif
+    endif
+  }
+
   partition "Diagnostics Check" {
     if (Board is not firmware board?) then (yes)
       :Run network diagnostics;
@@ -75,7 +86,16 @@ partition "Finally Block" {
     set_elastic_field(board, 'dmesg_errs', sh(returnStdout: true, script: 'cat dmesg_err_filtered.log | wc -l').trim())
     set_elastic_field(board, 'dmesg_warns', sh(returnStdout: true, script: 'cat dmesg_warn.log | wc -l').trim())
   end note
-  
+
+  if (check_systemd and not firmware board?) then (yes)
+    :Count and rename systemd logs;
+    note right
+      set_elastic_field(board, 'systemd_failed', sh(returnStdout: true, script: 'cat systemd_failed.log | wc -l').trim())
+      set_elastic_field(board, 'systemd_inactive', sh(returnStdout: true, script: 'cat systemd_inactive.log | wc -l').trim())
+      run_i("if [ -f systemd_<kind>.log ]; then mv systemd_<kind>.log systemd_" + board + "_<kind>.log; fi")
+    end note
+  endif
+
   :Rename and archive logs;
   note right
     run_i("if [ -f dmesg.log ]; then mv dmesg.log dmesg_" + board + ".log; fi")

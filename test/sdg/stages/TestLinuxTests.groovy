@@ -236,9 +236,161 @@ class TestLinuxTests extends Specification {
         1 * steps.echo('[INFO] Running LinuxTests for ' + board)
         1 * steps.sh('set -o pipefail; nebula show-log driver.check-iio-devices --uri="ip:" --board-name=zynq-zc702-adv7511-ad9361-fmcomms2-3 2>&1 | tee out.out')
         1 * steps.unstable('Linux Tests Failed:  [diagnostics failed: nebula failed]')
-        
+
         assert gauntlet.get_elastic_field("zynq-zc702-adv7511-ad9361-fmcomms2-3", "drivers_enumerated") == "4"
         assert gauntlet.get_elastic_field("zynq-zc702-adv7511-ad9361-fmcomms2-3", "dmesg_errs") == "0"
         assert gauntlet.get_elastic_field("zynq-zc702-adv7511-ad9361-fmcomms2-3", "dmesg_warns") == "0"
+    }
+
+    def "test stageSteps - systemd check pass"(){
+        given:
+
+        // Mock gauntlet
+        context.getStepExecutor() >> steps
+        context.isDefault() >> false
+        steps.isUnix() >> true
+        steps.sh(script: 'uname', returnStdout: true) >> 'Linux'
+        steps.fileExists('out.out') >> true
+        steps.readFile('out.out') >> 'STDOUT of some successful nebula command'
+        def mockGauntEnv = getGauntEnv.call("NA", "NA", "NA", "v0.31", "NA")
+        mockGauntEnv.check_systemd = true
+        steps.getGauntEnv(_,_,_,_,_) >> mockGauntEnv
+        ContextRegistry.registerContext(context)
+        Gauntlet gauntlet = new Gauntlet()
+        gauntlet.construct("NA","NA","NA","NA","artifactory")
+
+        LinuxTests linuxTestsStage = new LinuxTests()
+        String board = "zynq-zc702-adv7511-ad9361-fmcomms2-3"
+        gauntlet.set_env("docker_args", [])
+        gauntlet.set_env("debug_level", 3)
+
+        steps.sh(script: 'cat dmesg_err_filtered.log | wc -l', returnStdout: true) >> "0"
+        steps.sh(script: 'cat dmesg_warn.log | wc -l', returnStdout: true) >> "0"
+        steps.sh(script: 'cat systemd_failed.log | wc -l', returnStdout: true) >> "0"
+        steps.sh(script: 'cat systemd_inactive.log | wc -l', returnStdout: true) >> "0"
+        steps.sh(script: 'nebula show-log update-config driver-config iio_device_names -b zynq-zc702-adv7511-ad9361-fmcomms2-3',
+                 returnStdout: true) >> '["ad7291","ad9361-phy","cf-ad9361-dds-core-lpc","cf-ad9361-lpc"]'
+
+        when:
+        linuxTestsStage.stageSteps(gauntlet, board)
+
+        then:
+        1 * steps.sh('set -o pipefail; nebula show-log net.check-systemd --ip=\'\' --board-name=zynq-zc702-adv7511-ad9361-fmcomms2-3 2>&1 | tee out.out')
+        0 * steps.unstable(_)
+        assert gauntlet.get_elastic_field("zynq-zc702-adv7511-ad9361-fmcomms2-3", "systemd_failed") == "0"
+        assert gauntlet.get_elastic_field("zynq-zc702-adv7511-ad9361-fmcomms2-3", "systemd_inactive") == "0"
+    }
+
+    def "test stageSteps - systemd failed services"(){
+        given:
+
+        // Mock gauntlet
+        context.getStepExecutor() >> steps
+        context.isDefault() >> false
+        steps.isUnix() >> true
+        steps.sh(script: 'uname', returnStdout: true) >> 'Linux'
+        steps.fileExists('out.out') >> true
+        steps.readFile('out.out') >> 'STDOUT of some successful nebula command'
+        steps.fileExists('systemd_failed.log') >> true
+        steps.readFile('systemd_failed.log') >> 'iiod.service loaded failed failed IIO Daemon'
+        def mockGauntEnv = getGauntEnv.call("NA", "NA", "NA", "v0.31", "NA")
+        mockGauntEnv.check_systemd = true
+        steps.getGauntEnv(_,_,_,_,_) >> mockGauntEnv
+        ContextRegistry.registerContext(context)
+        Gauntlet gauntlet = new Gauntlet()
+        gauntlet.construct("NA","NA","NA","NA","artifactory")
+
+        LinuxTests linuxTestsStage = new LinuxTests()
+        String board = "zynq-zc702-adv7511-ad9361-fmcomms2-3"
+        gauntlet.set_env("docker_args", [])
+        gauntlet.set_env("debug_level", 3)
+
+        steps.sh(script: 'cat dmesg_err_filtered.log | wc -l', returnStdout: true) >> "0"
+        steps.sh(script: 'cat dmesg_warn.log | wc -l', returnStdout: true) >> "0"
+        steps.sh(script: 'cat systemd_failed.log | wc -l', returnStdout: true) >> "1"
+        steps.sh(script: 'cat systemd_inactive.log | wc -l', returnStdout: true) >> "0"
+        steps.sh(script: 'nebula show-log update-config driver-config iio_device_names -b zynq-zc702-adv7511-ad9361-fmcomms2-3',
+                 returnStdout: true) >> '["ad7291","ad9361-phy","cf-ad9361-dds-core-lpc","cf-ad9361-lpc"]'
+        steps.sh('set -o pipefail; nebula show-log net.check-systemd --ip=\'\' --board-name=zynq-zc702-adv7511-ad9361-fmcomms2-3 2>&1 | tee out.out') >> { throw new Exception() }
+
+        when:
+        linuxTestsStage.stageSteps(gauntlet, board)
+
+        then:
+        1 * steps.unstable('Linux Tests Failed: [systemd check failed: iiod.service]')
+        assert gauntlet.get_elastic_field("zynq-zc702-adv7511-ad9361-fmcomms2-3", "systemd_failed") == "1"
+        assert gauntlet.get_elastic_field("zynq-zc702-adv7511-ad9361-fmcomms2-3", "systemd_inactive") == "0"
+    }
+
+    def "test stageSteps - systemd check error without log"(){
+        given:
+
+        // Mock gauntlet
+        context.getStepExecutor() >> steps
+        context.isDefault() >> false
+        steps.isUnix() >> true
+        steps.sh(script: 'uname', returnStdout: true) >> 'Linux'
+        steps.fileExists('out.out') >> true
+        steps.readFile('out.out') >> 'STDOUT of some successful nebula command'
+        def mockGauntEnv = getGauntEnv.call("NA", "NA", "NA", "v0.31", "NA")
+        mockGauntEnv.check_systemd = true
+        steps.getGauntEnv(_,_,_,_,_) >> mockGauntEnv
+        ContextRegistry.registerContext(context)
+        Gauntlet gauntlet = new Gauntlet()
+        gauntlet.construct("NA","NA","NA","NA","artifactory")
+
+        LinuxTests linuxTestsStage = new LinuxTests()
+        String board = "zynq-zc702-adv7511-ad9361-fmcomms2-3"
+        gauntlet.set_env("docker_args", [])
+        gauntlet.set_env("debug_level", 3)
+
+        steps.sh(script: 'cat dmesg_err_filtered.log | wc -l', returnStdout: true) >> "0"
+        steps.sh(script: 'cat dmesg_warn.log | wc -l', returnStdout: true) >> "0"
+        steps.sh(script: 'cat systemd_failed.log | wc -l', returnStdout: true) >> "0"
+        steps.sh(script: 'cat systemd_inactive.log | wc -l', returnStdout: true) >> "0"
+        steps.sh(script: 'nebula show-log update-config driver-config iio_device_names -b zynq-zc702-adv7511-ad9361-fmcomms2-3',
+                 returnStdout: true) >> '["ad7291","ad9361-phy","cf-ad9361-dds-core-lpc","cf-ad9361-lpc"]'
+        steps.sh('set -o pipefail; nebula show-log net.check-systemd --ip=\'\' --board-name=zynq-zc702-adv7511-ad9361-fmcomms2-3 2>&1 | tee out.out') >> { throw new Exception() }
+
+        when:
+        linuxTestsStage.stageSteps(gauntlet, board)
+
+        then:
+        1 * steps.unstable('Linux Tests Failed: [systemd check failed: nebula failed]')
+    }
+
+    def "test stageSteps - systemd check skipped on pluto"(){
+        given:
+
+        // Mock gauntlet
+        context.getStepExecutor() >> steps
+        context.isDefault() >> false
+        steps.isUnix() >> true
+        steps.sh(script: 'uname', returnStdout: true) >> 'Linux'
+        steps.fileExists('out.out') >> true
+        steps.readFile('out.out') >> 'STDOUT of some successful nebula command'
+        def mockGauntEnv = getGauntEnv.call("NA", "NA", "NA", "v0.31", "NA")
+        mockGauntEnv.check_systemd = true
+        steps.getGauntEnv(_,_,_,_,_) >> mockGauntEnv
+        ContextRegistry.registerContext(context)
+        Gauntlet gauntlet = new Gauntlet()
+        gauntlet.construct("NA","NA","NA","NA","NA")
+
+        LinuxTests linuxTestsStage = new LinuxTests()
+        String board = "pluto"
+        gauntlet.set_env("docker_args", [])
+        gauntlet.set_env("debug_level", 3)
+
+        steps.sh(script: 'cat dmesg_err_filtered.log | wc -l', returnStdout: true) >> "0"
+        steps.sh(script: 'cat dmesg_warn.log | wc -l', returnStdout: true) >> "0"
+        steps.sh(script: 'nebula show-log update-config driver-config iio_device_names -b pluto',
+                 returnStdout: true) >> '["adm1177-iio","ad9361-phy","cf-ad9361-dds-core-lpc","cf-ad9361-lpc"]'
+
+        when:
+        linuxTestsStage.stageSteps(gauntlet, board)
+
+        then:
+        0 * steps.sh({ it.toString().contains('check-systemd') })
+        assert gauntlet.get_elastic_field("pluto", "systemd_failed") == ""
     }
 }
